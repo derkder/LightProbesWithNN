@@ -68,6 +68,13 @@ cbuffer CB
 {
     uint gFrameCount;    // Frame count since scene was loaded.
     uint gPRNGDimension; // First available PRNG dimension.
+
+    float3 gSceneAABBCenter;
+    float3 gSceneAABBExtent;
+    float gIntervalX;
+    float gIntervalY;
+    float gCurZ;
+
 }
 
 // Inputs
@@ -80,6 +87,7 @@ RWTexture2D<float4> gOutputColor;
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
 static const uint kMaxBounces = MAX_BOUNCES;
+static const uint kSliceY = Slice_Y;
 static const bool kComputeDirect = COMPUTE_DIRECT;
 static const bool kUseImportanceSampling = USE_IMPORTANCE_SAMPLING;
 static const bool kUseAnalyticLights = USE_ANALYTIC_LIGHTS;
@@ -88,6 +96,8 @@ static const bool kUseEnvLight = USE_ENV_LIGHT;
 static const bool kUseEnvBackground = USE_ENV_BACKGROUND;
 static const float3 kDefaultBackgroundColor = float3(0, 0, 0);
 static const float kRayTMax = FLT_MAX;
+static const bool isCutting = true;
+
 
 /**
  * Payload for shadow ray.
@@ -108,6 +118,7 @@ struct ScatterRayData
     uint pathLength;  ///< Path length in number of path segments (0 at origin, 1 at first secondary hit, etc.). Max 2^31.
     float3 origin;    ///< Next path segment origin.
     float3 direction; ///< Next path segment direction.
+    HitInfo hitInfo;
 
     SampleGenerator sg; ///< Per-ray state for the sample generator (up to 16B).
 
@@ -123,6 +134,7 @@ struct ScatterRayData
         this.origin = float3(0, 0, 0);
         this.direction = float3(0, 0, 0);
         this.sg = sg;
+        this.hitInfo = {};
     }
 };
 
@@ -376,6 +388,34 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
+float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDim)
+{
+    float3 outColor = float3(0.f);
+
+    const float3 primaryRayOrigin = gScene.camera.getPosition();
+    const float3 primaryRayDir = normalize(probePos - primaryRayOrigin);
+
+    // 直接发射光线，移除使用 gbuffer的逻辑
+    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
+    ScatterRayData rayData = ScatterRayData(sg);
+    rayData.origin = primaryRayOrigin;
+    rayData.direction = primaryRayDir;
+
+    //
+    for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
+    {
+        if (depth == 1 && abs(rayData.origin.z - gCurZ) > 0.002 && (isCutting)) {
+            outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
+            break;
+        }
+        traceScatterRay(rayData);
+    }
+
+    // Store contribution from scatter ray.
+    outColor += rayData.radiance;
+    return outColor;
+}
+
 /**
  * This is the main entry point for the minimal path tracer.
  *
@@ -615,9 +655,35 @@ void scatterSdfGridClosestHit(inout ScatterRayData rayData, SDFGridHitData sdfGr
 void rayGen()
 {
     uint2 pixel = DispatchRaysIndex().xy;
-    uint2 frameDim = DispatchRaysDimensions().xy;
+    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小
+    // gOutputColor[pixel] = float4(float3(pixel.x / 1920.f), 1.f);//这里1920改成frameDim.x居然会全黑？
 
-    float3 color = tracePath(pixel, frameDim);
+    //float3 color = tracePath(pixel, frameDim);
+    float3 probePos;
+    probePos.z = gCurZ;
+    // probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
+    // probePos.z = gSceneAABBCenter.z + (540 - pixel.y) * gIntervalY;
+
+    // cause pixel is unsigned int and is hard to change type
+    if (pixel.x <= 960 && pixel.y <= 540) {
+        probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
+        probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
+    }
+    else if (pixel.x > 960 && pixel.y <= 540) {
+        probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
+        probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
+    }
+    else if (pixel.x > 960 && pixel.y > 540) {
+        probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
+        probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
+    }
+    else {
+        probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
+        probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
+    }
+
+
+    float3 color = MyTracePath(probePos, pixel, frameDim);
 
     gOutputColor[pixel] = float4(color, 1.f);
 }

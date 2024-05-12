@@ -28,6 +28,7 @@
 #include "MinimalPathTracer.h"
 #include "RenderGraph/RenderPassHelpers.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
+#include <iostream>
 
 extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registry)
 {
@@ -61,6 +62,7 @@ const ChannelList kOutputChannels = {
 const char kMaxBounces[] = "maxBounces";
 const char kComputeDirect[] = "computeDirect";
 const char kUseImportanceSampling[] = "useImportanceSampling";
+const char kSliceZ[] = "slilceYAxis";
 } // namespace
 
 MinimalPathTracer::MinimalPathTracer(ref<Device> pDevice, const Properties& props) : RenderPass(pDevice)
@@ -82,6 +84,8 @@ void MinimalPathTracer::parseProperties(const Properties& props)
             mComputeDirect = value;
         else if (key == kUseImportanceSampling)
             mUseImportanceSampling = value;
+        else if (key == kSliceZ)
+            mSliceZ = value;
         else
             logWarning("Unknown property '{}' in MinimalPathTracer properties.", key);
     }
@@ -91,6 +95,7 @@ Properties MinimalPathTracer::getProperties() const
 {
     Properties props;
     props[kMaxBounces] = mMaxBounces;
+    props[kSliceZ] = mSliceZ;
     props[kComputeDirect] = mComputeDirect;
     props[kUseImportanceSampling] = mUseImportanceSampling;
     return props;
@@ -152,6 +157,7 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     // Specialize program.
     // These defines should not modify the program vars. Do not trigger program vars re-creation.
     mTracer.pProgram->addDefine("MAX_BOUNCES", std::to_string(mMaxBounces));
+    mTracer.pProgram->addDefine("Slice_Y", std::to_string(mSliceZ));
     mTracer.pProgram->addDefine("COMPUTE_DIRECT", mComputeDirect ? "1" : "0");
     mTracer.pProgram->addDefine("USE_IMPORTANCE_SAMPLING", mUseImportanceSampling ? "1" : "0");
     mTracer.pProgram->addDefine("USE_ANALYTIC_LIGHTS", mpScene->useAnalyticLights() ? "1" : "0");
@@ -174,6 +180,11 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     auto var = mTracer.pVars->getRootVar();
     var["CB"]["gFrameCount"] = mFrameCount;
     var["CB"]["gPRNGDimension"] = dict.keyExists(kRenderPassPRNGDimension) ? dict[kRenderPassPRNGDimension] : 0u;
+    var["CB"]["gSceneAABBCenter"] = mSceneAABBCenter;
+    var["CB"]["gSceneAABBExtent"] = mSceneAABBExtent;
+    var["CB"]["gIntervalX"] = mIntervalX;
+    var["CB"]["gIntervalY"] = mIntervalY;
+    var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * (60.f / 100.f); // posZ of light probe
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.
     auto bind = [&](const ChannelDesc& desc)
@@ -193,6 +204,9 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     FALCOR_ASSERT(targetDim.x > 0 && targetDim.y > 0);
 
     // Spawn the rays.
+    // 这里应该改一下，不是生成像素点那么多的光线了
+    // 在目前这里最后一个参数还真的还是1，但是到后面就不是了噢
+    // 这里targetdim想要投射到空间中对应的点上
     mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(targetDim, 1));
 
     mFrameCount++;
@@ -204,6 +218,9 @@ void MinimalPathTracer::renderUI(Gui::Widgets& widget)
 
     dirty |= widget.var("Max bounces", mMaxBounces, 0u, 1u << 16);
     widget.tooltip("Maximum path length for indirect illumination.\n0 = direct only\n1 = one indirect bounce etc.", true);
+
+    dirty |= widget.var("Slice Z", mSliceZ, 0u, 1u << 16);
+    widget.tooltip("Slice Z Axis", true);
 
     dirty |= widget.checkbox("Evaluate direct illumination", mComputeDirect);
     widget.tooltip("Compute direct illumination.\nIf disabled only indirect is computed (when max bounces > 0).", true);
@@ -242,7 +259,8 @@ void MinimalPathTracer::setScene(RenderContext* pRenderContext, const ref<Scene>
         ProgramDesc desc;
         desc.addShaderModules(mpScene->getShaderModules());
         desc.addShaderLibrary(kShaderFile);
-        desc.setMaxPayloadSize(kMaxPayloadSizeBytes);
+        //desc.setMaxPayloadSize(kMaxPayloadSizeBytes);
+        desc.setMaxPayloadSize(160);
         desc.setMaxAttributeSize(mpScene->getRaytracingMaxAttributeSize());
         desc.setMaxTraceRecursionDepth(kMaxRecursionDepth);
 
@@ -297,6 +315,17 @@ void MinimalPathTracer::setScene(RenderContext* pRenderContext, const ref<Scene>
         }
 
         mTracer.pProgram = Program::create(mpDevice, desc, mpScene->getSceneDefines());
+
+        //CollectData
+        mSceneAABBCenter = mpScene->getSceneBounds().center();
+        mSceneAABBExtent = mpScene->getSceneBounds().extent();
+        mSceneAABBExtent.x *= 1.5f;
+        mSceneAABBExtent.y *= 1.5f;
+        mIntervalX = mSceneAABBExtent.x / probeNumsX;
+        mIntervalY = mSceneAABBExtent.y / probeNumsY;
+
+        minZ = mSceneAABBCenter.z - mSceneAABBExtent.z / 2;
+        maxZ = mSceneAABBCenter.z + mSceneAABBExtent.z / 2;
     }
 }
 
