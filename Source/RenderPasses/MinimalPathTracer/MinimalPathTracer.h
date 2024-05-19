@@ -99,6 +99,7 @@ private:
     uint probeNumsY = 1080;
     float minZ;
     float maxZ;
+    float sliceZPercent = 0.6f;
     bool isCutting = false;
 
     // Ray tracing program.

@@ -184,7 +184,7 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     var["CB"]["gSceneAABBExtent"] = mSceneAABBExtent;
     var["CB"]["gIntervalX"] = mIntervalX;
     var["CB"]["gIntervalY"] = mIntervalY;
-    var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * (60.f / 100.f); // posZ of light probe
+    var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * sliceZPercent; // posZ of light probe
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.
     auto bind = [&](const ChannelDesc& desc)
