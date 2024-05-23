@@ -29,6 +29,7 @@
 #include "RenderGraph/RenderPassHelpers.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
 #include <iostream>
+#include <chrono>
 
 extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registry)
 {
@@ -62,7 +63,8 @@ const ChannelList kOutputChannels = {
 const char kMaxBounces[] = "maxBounces";
 const char kComputeDirect[] = "computeDirect";
 const char kUseImportanceSampling[] = "useImportanceSampling";
-const char kSliceZ[] = "slilceYAxis";
+const char kIsCutting[] = "isCutting";//normal rayTrace or lightprobe raytrace
+const char kIsPerspective[] = "isPerspective"; // Perspective and orthography
 } // namespace
 
 MinimalPathTracer::MinimalPathTracer(ref<Device> pDevice, const Properties& props) : RenderPass(pDevice)
@@ -84,8 +86,8 @@ void MinimalPathTracer::parseProperties(const Properties& props)
             mComputeDirect = value;
         else if (key == kUseImportanceSampling)
             mUseImportanceSampling = value;
-        else if (key == kSliceZ)
-            mSliceZ = value;
+        else if (key == kIsCutting)
+            mIsCutting = value;
         else
             logWarning("Unknown property '{}' in MinimalPathTracer properties.", key);
     }
@@ -95,7 +97,7 @@ Properties MinimalPathTracer::getProperties() const
 {
     Properties props;
     props[kMaxBounces] = mMaxBounces;
-    props[kSliceZ] = mSliceZ;
+    props[kIsCutting] = mIsCutting;
     props[kComputeDirect] = mComputeDirect;
     props[kUseImportanceSampling] = mUseImportanceSampling;
     return props;
@@ -110,6 +112,24 @@ RenderPassReflection MinimalPathTracer::reflect(const CompileData& compileData)
     addRenderPassOutputs(reflector, kOutputChannels);
 
     return reflector;
+}
+
+void MinimalPathTracer::updateValue()
+{
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<float> elapsed = currentTime - lastUpdateTime;
+
+    if (elapsed.count() >= 3.f)
+    {                      
+        sliceZPercent += 0.02f; 
+        if (sliceZPercent > 0.8f)
+        {
+            sliceZPercent = 0.5f; 
+        }
+        lastUpdateTime = currentTime; 
+    }
+
+    std::cout << sliceZPercent;
 }
 
 void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData& renderData)
@@ -157,7 +177,7 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     // Specialize program.
     // These defines should not modify the program vars. Do not trigger program vars re-creation.
     mTracer.pProgram->addDefine("MAX_BOUNCES", std::to_string(mMaxBounces));
-    mTracer.pProgram->addDefine("Slice_Y", std::to_string(mSliceZ));
+    mTracer.pProgram->addDefine("IS_CUTTING", mIsCutting ? "1" : "0");
     mTracer.pProgram->addDefine("COMPUTE_DIRECT", mComputeDirect ? "1" : "0");
     mTracer.pProgram->addDefine("USE_IMPORTANCE_SAMPLING", mUseImportanceSampling ? "1" : "0");
     mTracer.pProgram->addDefine("USE_ANALYTIC_LIGHTS", mpScene->useAnalyticLights() ? "1" : "0");
@@ -185,6 +205,7 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     var["CB"]["gIntervalX"] = mIntervalX;
     var["CB"]["gIntervalY"] = mIntervalY;
     var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * sliceZPercent; // posZ of light probe
+    var["CB"]["gIsCutting"] = mIsCutting;
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.
     auto bind = [&](const ChannelDesc& desc)
@@ -210,6 +231,8 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
     mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(targetDim, 1));
 
     mFrameCount++;
+
+    //updateValue();
 }
 
 void MinimalPathTracer::renderUI(Gui::Widgets& widget)
@@ -219,8 +242,8 @@ void MinimalPathTracer::renderUI(Gui::Widgets& widget)
     dirty |= widget.var("Max bounces", mMaxBounces, 0u, 1u << 16);
     widget.tooltip("Maximum path length for indirect illumination.\n0 = direct only\n1 = one indirect bounce etc.", true);
 
-    dirty |= widget.var("Slice Z", mSliceZ, 0u, 1u << 16);
-    widget.tooltip("Slice Z Axis", true);
+    dirty |= widget.checkbox("Is Cutting", mIsCutting);
+    widget.tooltip("Is Cutting", true);
 
     dirty |= widget.checkbox("Evaluate direct illumination", mComputeDirect);
     widget.tooltip("Compute direct illumination.\nIf disabled only indirect is computed (when max bounces > 0).", true);
@@ -346,3 +369,5 @@ void MinimalPathTracer::prepareVars()
     auto var = mTracer.pVars->getRootVar();
     mpSampleGenerator->bindShaderData(var);
 }
+
+

@@ -75,6 +75,8 @@ cbuffer CB
     float gIntervalY;
     float gCurZ;
 
+    bool gIsCutting;
+
 }
 
 // Inputs
@@ -87,7 +89,6 @@ RWTexture2D<float4> gOutputColor;
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
 static const uint kMaxBounces = MAX_BOUNCES;
-static const uint kSliceY = Slice_Y;
 static const bool kComputeDirect = COMPUTE_DIRECT;
 static const bool kUseImportanceSampling = USE_IMPORTANCE_SAMPLING;
 static const bool kUseAnalyticLights = USE_ANALYTIC_LIGHTS;
@@ -96,7 +97,7 @@ static const bool kUseEnvLight = USE_ENV_LIGHT;
 static const bool kUseEnvBackground = USE_ENV_BACKGROUND;
 static const float3 kDefaultBackgroundColor = float3(0, 0, 0);
 static const float kRayTMax = FLT_MAX;
-static const bool isCutting = true;
+
 
 
 /**
@@ -392,7 +393,8 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 {
     float3 outColor = float3(0.f);
 
-    const float3 primaryRayOrigin = gScene.camera.getPosition();
+    float3 primaryRayOrigin = gScene.camera.getPosition();
+    primaryRayOrigin = float3(probePos.xy, primaryRayOrigin.z);
     const float3 primaryRayDir = normalize(probePos - primaryRayOrigin);
 
     // 直接发射光线，移除使用 gbuffer的逻辑
@@ -404,7 +406,9 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
     //
     for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
-        if (depth == 1 && abs(rayData.origin.z - gCurZ) > 0.002 && (isCutting)) {
+        // compare (distance between hitpoint & rayOrigin) & (distance between lightprobe & rayOrigin)
+        bool hasRadiance = ((distance(rayData.origin.z, primaryRayOrigin) - distance(probePos, primaryRayOrigin)) <= (1e-3)) ? true : false;
+        if (depth == 1 && hasRadiance && (gIsCutting)) {
             outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
             break;
         }
@@ -661,26 +665,32 @@ void rayGen()
     //float3 color = tracePath(pixel, frameDim);
     float3 probePos;
     probePos.z = gCurZ;
-    // probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
-    // probePos.z = gSceneAABBCenter.z + (540 - pixel.y) * gIntervalY;
 
-    // cause pixel is unsigned int and is hard to change type
-    if (pixel.x <= 960 && pixel.y <= 540) {
-        probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
-        probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
-    }
-    else if (pixel.x > 960 && pixel.y <= 540) {
-        probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
-        probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
-    }
-    else if (pixel.x > 960 && pixel.y > 540) {
-        probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
-        probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
-    }
-    else {
-        probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
-        probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
-    }
+    uint xOffset = (pixel.x <= 960) ? (pixel.x - 960) : (960 - pixel.x);
+    int xSign = (pixel.x <= 960) ? 1 : -1;
+    uint yOffset = (pixel.y <= 540) ? (540 - pixel.y) : (pixel.y - 540);
+    int ySign = (pixel.y <= 540) ? 1 : -1;
+
+    probePos.x = gSceneAABBCenter.x + xSign * xOffset * gIntervalX;
+    probePos.y = gSceneAABBCenter.y + ySign * yOffset * gIntervalY;
+
+    // // cause pixel is unsigned int and is hard to change type
+    // if (pixel.x <= 960 && pixel.y <= 540) {
+    //     probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
+    //     probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
+    // }
+    // else if (pixel.x > 960 && pixel.y <= 540) {
+    //     probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
+    //     probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
+    // }
+    // else if (pixel.x > 960 && pixel.y > 540) {
+    //     probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
+    //     probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
+    // }
+    // else {
+    //     probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
+    //     probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
+    // }
 
 
     float3 color = MyTracePath(probePos, pixel, frameDim);

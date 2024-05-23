@@ -29,6 +29,7 @@
 #include "Falcor.h"
 #include "RenderGraph/RenderPass.h"
 #include "Utils/Sampling/SampleGenerator.h"
+#include <chrono>
 
 using namespace Falcor;
 
@@ -62,6 +63,9 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    //CollectData
+    virtual void updateValue();
+
 private:
     void parseProperties(const Properties& props);
     void prepareVars();
@@ -82,7 +86,7 @@ private:
     /// Use importance sampling for materials.
     bool mUseImportanceSampling = true;
     // slice`s y axis
-    uint mSliceZ = 0.5;
+    //uint mSliceZ = 0.5;//abandoned
 
     // Runtime data
 
@@ -99,8 +103,10 @@ private:
     uint probeNumsY = 1080;
     float minZ;
     float maxZ;
-    float sliceZPercent = 0.6f;
-    bool isCutting = false;
+    float sliceZPercent = 0.65f;
+    bool mIsCutting = true;
+    bool isPerspective = false;
+    std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
 
     // Ray tracing program.
     struct
