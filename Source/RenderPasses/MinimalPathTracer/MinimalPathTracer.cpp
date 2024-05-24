@@ -222,13 +222,14 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
 
     // Get dimensions of ray dispatch.
     const uint2 targetDim = renderData.getDefaultTextureDims();
+    const uint2 rayDispatchDim = uint2(probeNumsX, probeNumsY);
     FALCOR_ASSERT(targetDim.x > 0 && targetDim.y > 0);
 
     // Spawn the rays.
     // 这里应该改一下，不是生成像素点那么多的光线了
     // 在目前这里最后一个参数还真的还是1，但是到后面就不是了噢
     // 这里targetdim想要投射到空间中对应的点上
-    mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(targetDim, 1));
+    mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(rayDispatchDim, 1));
 
     mFrameCount++;
 

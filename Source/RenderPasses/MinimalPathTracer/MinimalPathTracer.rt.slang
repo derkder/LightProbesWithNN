@@ -659,17 +659,19 @@ void scatterSdfGridClosestHit(inout ScatterRayData rayData, SDFGridHitData sdfGr
 void rayGen()
 {
     uint2 pixel = DispatchRaysIndex().xy;
-    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小
+    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+    uint halfX = frameDim.x / 2;
+    uint halfY = frameDim.y / 2;
     // gOutputColor[pixel] = float4(float3(pixel.x / 1920.f), 1.f);//这里1920改成frameDim.x居然会全黑？
 
     //float3 color = tracePath(pixel, frameDim);
     float3 probePos;
     probePos.z = gCurZ;
 
-    uint xOffset = (pixel.x <= 960) ? (pixel.x - 960) : (960 - pixel.x);
-    int xSign = (pixel.x <= 960) ? 1 : -1;
-    uint yOffset = (pixel.y <= 540) ? (540 - pixel.y) : (pixel.y - 540);
-    int ySign = (pixel.y <= 540) ? 1 : -1;
+    uint xOffset = (pixel.x <= halfX) ? (pixel.x - halfX) : (halfX - pixel.x);
+    int xSign = (pixel.x <= halfX) ? 1 : -1;
+    uint yOffset = (pixel.y <= halfY) ? (halfY - pixel.y) : (pixel.y - halfY);
+    int ySign = (pixel.y <= halfY) ? 1 : -1;
 
     probePos.x = gSceneAABBCenter.x + xSign * xOffset * gIntervalX;
     probePos.y = gSceneAABBCenter.y + ySign * yOffset * gIntervalY;

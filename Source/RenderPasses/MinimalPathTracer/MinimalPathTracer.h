@@ -99,8 +99,10 @@ private:
     float3 mSceneAABBExtent;
     float mIntervalX;
     float mIntervalY;
-    uint probeNumsX = 1920;
-    uint probeNumsY = 1080;
+    //uint probeNumsX = 1920;
+    //uint probeNumsY = 1080;
+    uint probeNumsX = 1000;
+    uint probeNumsY = 1000;
     float minZ;
     float maxZ;
     float sliceZPercent = 0.65f;
