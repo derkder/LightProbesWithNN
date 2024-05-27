@@ -481,6 +481,7 @@ float3 tracePath(const uint2 pixel, const uint2 frameDim)
             outColor += mi.getProperties(sd).emission;
 
             // Add contribution of direct light from analytic lights.
+            
             // Light probe and mesh lights are handled by the scatter ray hit/miss shaders.
             outColor += kUseAnalyticLights ? evalDirectAnalytic(sd, mi, sg) : float3(0.f);
         }

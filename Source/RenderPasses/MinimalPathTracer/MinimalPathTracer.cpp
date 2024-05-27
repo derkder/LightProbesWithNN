@@ -233,7 +233,7 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
 
     mFrameCount++;
 
-    //updateValue();
+    updateValue();
 }
 
 void MinimalPathTracer::renderUI(Gui::Widgets& widget)
