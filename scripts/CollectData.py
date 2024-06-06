@@ -8,11 +8,11 @@ def render_graph_MinimalPathTracer():
     g.addPass(ToneMapper, "ToneMapper")
     MinimalPathTracer = createPass("MinimalPathTracer", {'maxBounces': 3})
     g.addPass(MinimalPathTracer, "MinimalPathTracer")
-    VBufferRT = createPass("VBufferRT", {'samplePattern': 'Stratified', 'sampleCount': 16})
-    g.addPass(VBufferRT, "VBufferRT")
+    # VBufferRT = createPass("VBufferRT", {'samplePattern': 'Stratified', 'sampleCount': 16})
+    # g.addPass(VBufferRT, "VBufferRT")
     g.addEdge("AccumulatePass.output", "ToneMapper.src")
-    g.addEdge("VBufferRT.vbuffer", "MinimalPathTracer.vbuffer")
-    g.addEdge("VBufferRT.viewW", "MinimalPathTracer.viewW")
+    # g.addEdge("VBufferRT.vbuffer", "MinimalPathTracer.vbuffer")
+    # g.addEdge("VBufferRT.viewW", "MinimalPathTracer.viewW")
     g.addEdge("MinimalPathTracer.color", "AccumulatePass.input")
 
     # g.markOutput("MinimalPathTracer.color")
@@ -24,6 +24,7 @@ try: m.addGraph(MinimalPathTracer)
 except NameError: None
 
 # m.loadScene("C:/Files/CGProject/NNLightProbes/media/inv_rendering_scenes/bunny_init.pyscene")
+m.loadScene("D:/Projects/LightProbesWithNN/media/inv_rendering_scenes/bunny_init.pyscene")
 
 
 n_collect_frames = 5000

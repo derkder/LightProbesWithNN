@@ -395,7 +395,7 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 
     float3 primaryRayOrigin = gScene.camera.getPosition();
     primaryRayOrigin = float3(probePos.xy, primaryRayOrigin.z);
-    const float3 primaryRayDir = normalize(probePos - primaryRayOrigin);
+    const float3 primaryRayDir = normalize(gSceneAABBCenter - primaryRayOrigin);
 
     // 直接发射光线，移除使用 gbuffer的逻辑
     SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
@@ -409,6 +409,7 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
         // compare (distance between hitpoint & rayOrigin) & (distance between lightprobe & rayOrigin)
         bool hasRadiance = ((distance(rayData.origin.z, primaryRayOrigin) - distance(probePos, primaryRayOrigin)) <= (1e-3)) ? true : false;
         if (depth == 1 && hasRadiance && (gIsCutting)) {
+            // 只有获取到第一个hitpoint的时候才开始判断是否需要pt计算颜色
             outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
             break;
         }
