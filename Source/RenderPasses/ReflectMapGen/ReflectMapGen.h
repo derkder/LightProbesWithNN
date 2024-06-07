@@ -68,6 +68,7 @@ public:
 
 private:
     void parseProperties(const Properties& props);
+    void prepareResolve(const RenderData& renderData);
     void prepareVars();
 
     // Internal state
@@ -117,4 +118,7 @@ private:
         ref<RtBindingTable> pBindingTable;
         ref<RtProgramVars> pVars;
     } mTracer;
+
+    ref<ComputePass> mpResolvePass;
+    ref<Texture> mOutputTex;
 };

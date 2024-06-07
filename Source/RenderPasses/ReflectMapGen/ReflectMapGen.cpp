@@ -39,6 +39,7 @@ extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registr
 namespace
 {
 const char kShaderFile[] = "RenderPasses/ReflectMapGen/ReflectMapGen.rt.slang";
+const char kResolveFile[] = "RenderPasses/ReflectMapGen/ResolvePass.cs.slang";
 
 // Ray tracing settings that affect the traversal stack size.
 // These should be set as small as possible.
@@ -46,6 +47,7 @@ const uint32_t kMaxPayloadSizeBytes = 72u;
 const uint32_t kMaxRecursionDepth = 2u;
 
 const char kInputViewDir[] = "viewW";
+const char kOutputColor[] = "color";
 
 const ChannelList kInputChannels = {
     // clang-format off
@@ -56,7 +58,7 @@ const ChannelList kInputChannels = {
 
 const ChannelList kOutputChannels = {
     // clang-format off
-    { "color",          "gOutputColor", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputColor,          "gOutputColor", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     // clang-format on
 };
 
@@ -132,6 +134,13 @@ void ReflectMapGen::updateValue()
     std::cout << sliceZPercent;
 }
 
+void ReflectMapGen::prepareResolve(const RenderData& renderData)
+{
+    auto var = mpResolvePass->getRootVar();
+    var["radiance"] = mOutputTex; // 新建的Texture，想把结果Blit到这里
+    var["output"] = renderData.getTexture(kOutputColor);// 这个pass计算的结果
+}
+
 void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // Update refresh flag if options that affect the output have changed.
@@ -153,6 +162,20 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
                 pRenderContext->clearTexture(pDst);
         }
         return;
+    }
+
+    const auto& pInputViewDir = renderData.getTexture(kInputViewDir);
+    if (!mOutputTex)
+    {
+        mOutputTex = mpDevice->createTexture2D(
+            pInputViewDir->getWidth(),
+            pInputViewDir->getHeight(),
+            ResourceFormat::RGBA32Float,
+            1,
+            1,
+            nullptr,
+            ResourceBindFlags::UnorderedAccess | ResourceBindFlags::Shared | ResourceBindFlags::ShaderResource
+        );
     }
 
     if (is_set(mpScene->getUpdates(), Scene::UpdateFlags::RecompileNeeded) ||
@@ -231,8 +254,15 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     // 这里targetdim想要投射到空间中对应的点上
     mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(rayDispatchDim, 1));
 
-    mFrameCount++;
+    mpResolvePass->execute(pRenderContext, Falcor::uint3(targetDim, 1));
+    auto ext = Bitmap::getFileExtFromResourceFormat(mOutputTex->getFormat());
+    auto fileformat = Bitmap::getFormatFromFileExtension(ext);
+    Bitmap::ExportFlags flags = Bitmap::ExportFlags::None;
+    flags |= Bitmap::ExportFlags::ExportAlpha;
+    std::string path = "D:/Projects/temp/wowwowowowow.ext";
+    mOutputTex->captureToFile(0, 0, path, fileformat, flags, false /* async */);
 
+    mFrameCount++;
     updateValue();
 }
 
@@ -268,6 +298,8 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
     mTracer.pBindingTable = nullptr;
     mTracer.pVars = nullptr;
     mFrameCount = 0;
+
+    mpResolvePass = nullptr;
 
     // Set new scene.
     mpScene = pScene;
@@ -340,6 +372,16 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
 
         mTracer.pProgram = Program::create(mpDevice, desc, mpScene->getSceneDefines());
 
+        ProgramDesc resolveDesc;
+        resolveDesc.addShaderLibrary(kResolveFile).csEntry("main");
+        resolveDesc.addShaderModules(mpScene->getShaderModules());
+        resolveDesc.addTypeConformances(mpScene->getTypeConformances());
+
+        DefineList defines;
+        defines.add(mpSampleGenerator->getDefines());
+        defines.add(mpScene->getSceneDefines());
+        mpResolvePass = ComputePass::create(mpDevice, resolveDesc, defines);
+         
         //CollectData
         mSceneAABBCenter = mpScene->getSceneBounds().center();
         mSceneAABBExtent = mpScene->getSceneBounds().extent();

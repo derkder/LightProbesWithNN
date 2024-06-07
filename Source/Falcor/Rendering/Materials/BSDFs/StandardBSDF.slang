@@ -307,6 +307,7 @@ struct StandardBSDF : IBSDF, IDifferentiable
     float evalPdf(const float3 wi, const float3 wo)
     {
         float pdf = 0.f;
+        //return pdf;
         if (pDiffuseReflection > 0.f)
             pdf += pDiffuseReflection * diffuseReflection.evalPdf(wi, wo);
         if (pDiffuseTransmission > 0.f)

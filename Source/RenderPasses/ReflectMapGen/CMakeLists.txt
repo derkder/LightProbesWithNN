@@ -4,6 +4,7 @@ target_sources(ReflectMapGen PRIVATE
     ReflectMapGen.cpp
     ReflectMapGen.h
     ReflectMapGen.rt.slang
+    ResolvePass.cs.slang
 )
 
 target_copy_shaders(ReflectMapGen RenderPasses/ReflectMapGen)

@@ -395,8 +395,8 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 
     float3 primaryRayOrigin = gScene.camera.getPosition();
     primaryRayOrigin = float3(probePos.xy, primaryRayOrigin.z);
-    const float3 primaryRayDir = normalize(gSceneAABBCenter - primaryRayOrigin);
-
+    // const float3 primaryRayDir = normalize(gSceneAABBCenter - primaryRayOrigin);
+    const float3 primaryRayDir = normalize(probePos - primaryRayOrigin);
     // 直接发射光线，移除使用 gbuffer的逻辑
     SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
     ScatterRayData rayData = ScatterRayData(sg);
