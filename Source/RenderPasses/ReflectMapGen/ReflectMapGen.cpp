@@ -260,10 +260,10 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     Bitmap::ExportFlags flags = Bitmap::ExportFlags::None;
     flags |= Bitmap::ExportFlags::ExportAlpha;
     std::string path = "D:/Projects/temp/wowwowowowow.ext";
-    mOutputTex->captureToFile(0, 0, path, fileformat, flags, false /* async */);
+    //mOutputTex->captureToFile(0, 0, path, fileformat, flags, false /* async */);
 
     mFrameCount++;
-    updateValue();
+    //updateValue();
 }
 
 void ReflectMapGen::renderUI(Gui::Widgets& widget)
@@ -385,8 +385,8 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
         //CollectData
         mSceneAABBCenter = mpScene->getSceneBounds().center();
         mSceneAABBExtent = mpScene->getSceneBounds().extent();
-        mSceneAABBExtent.x *= 1.5f;
-        mSceneAABBExtent.y *= 1.5f;
+        //mSceneAABBExtent.x *= 1.5f;
+        //mSceneAABBExtent.y *= 1.5f;
         mIntervalX = mSceneAABBExtent.x / probeNumsX;
         mIntervalY = mSceneAABBExtent.y / probeNumsY;
 

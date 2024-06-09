@@ -88,6 +88,10 @@ RWTexture2D<float4> gOutputColor;
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
+#define From_Left 0
+#define From_Right 1
+#define From_Back 2
+
 static const uint kMaxBounces = MAX_BOUNCES;
 static const bool kComputeDirect = COMPUTE_DIRECT;
 static const bool kUseImportanceSampling = USE_IMPORTANCE_SAMPLING;
@@ -98,7 +102,10 @@ static const bool kUseEnvBackground = USE_ENV_BACKGROUND;
 static const float3 kDefaultBackgroundColor = float3(0, 0, 0);
 static const float kRayTMax = FLT_MAX;
 
-
+static const float3 kProbeLoc = float3(0.1, 0.275, 0.);
+//反过来不行是因为有球挡住了
+static const bool kIsInverted = false;
+static const int currentState = From_Left;
 
 /**
  * Payload for shadow ray.
@@ -389,36 +396,55 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
+
 float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDim)
 {
     float3 outColor = float3(0.f);
 
     float3 primaryRayOrigin = gScene.camera.getPosition();
     primaryRayOrigin = float3(probePos.xy, primaryRayOrigin.z);
+
+    if (From_Left == currentState) {
+        primaryRayOrigin.z = primaryRayOrigin.x;
+        primaryRayOrigin.x = -0.27;
+    }
+    else if (From_Right == currentState) {
+        primaryRayOrigin.z = primaryRayOrigin.x;
+        primaryRayOrigin.x = 0.27;
+    }
+    else if(From_Back == currentState){
+        primaryRayOrigin.z = -primaryRayOrigin.z;
+    }
+    
     // const float3 primaryRayDir = normalize(gSceneAABBCenter - primaryRayOrigin);
-    const float3 primaryRayDir = normalize(probePos - primaryRayOrigin);
+    const float3 primaryRayDir = normalize(kProbeLoc - primaryRayOrigin);
+
+
     // 直接发射光线，移除使用 gbuffer的逻辑
     SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
     ScatterRayData rayData = ScatterRayData(sg);
-    rayData.origin = primaryRayOrigin;
-    rayData.direction = primaryRayDir;
+    if(!kIsInverted){
+        rayData.origin = primaryRayOrigin;
+        rayData.direction = primaryRayDir;
+    }
+    else{
+        rayData.origin = kProbeLoc;
+        rayData.direction = -primaryRayDir;
+    }
 
-    //
+    bool hasRadiance = true;
+    float3 radiance1 = float3(0.f);
     for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
-        // compare (distance between hitpoint & rayOrigin) & (distance between lightprobe & rayOrigin)
-        bool hasRadiance = ((distance(rayData.origin.z, primaryRayOrigin) - distance(probePos, primaryRayOrigin)) <= (1e-3)) ? true : false;
-        if (depth == 1 && hasRadiance && (gIsCutting)) {
-            // 只有获取到第一个hitpoint的时候才开始判断是否需要pt计算颜色
-            outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
-            break;
-        }
+        //if (1 == depth) return rayData.radiance;
         traceScatterRay(rayData);
+        if(0 == depth) radiance1 = rayData.radiance;
     }
 
     // Store contribution from scatter ray.
     outColor += rayData.radiance;
-    return outColor;
+    if (hasRadiance) return outColor - radiance1;
+    else return gScene.envMap.eval(primaryRayDir);
 }
 
 /**
