@@ -245,7 +245,7 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
 
     // Get dimensions of ray dispatch.
     const uint2 targetDim = renderData.getDefaultTextureDims();
-    const uint2 rayDispatchDim = uint2(probeNumsX, probeNumsY);
+    const uint2 rayDispatchDim = uint2(sampleNumsX, sampleNumsY);
     FALCOR_ASSERT(targetDim.x > 0 && targetDim.y > 0);
 
     // Spawn the rays.
@@ -254,12 +254,12 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     // 这里targetdim想要投射到空间中对应的点上
     mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(rayDispatchDim, 1));
 
-    mpResolvePass->execute(pRenderContext, Falcor::uint3(targetDim, 1));
-    auto ext = Bitmap::getFileExtFromResourceFormat(mOutputTex->getFormat());
-    auto fileformat = Bitmap::getFormatFromFileExtension(ext);
-    Bitmap::ExportFlags flags = Bitmap::ExportFlags::None;
-    flags |= Bitmap::ExportFlags::ExportAlpha;
-    std::string path = "D:/Projects/temp/wowwowowowow.ext";
+    //mpResolvePass->execute(pRenderContext, Falcor::uint3(targetDim, 1));
+    //auto ext = Bitmap::getFileExtFromResourceFormat(mOutputTex->getFormat());
+    //auto fileformat = Bitmap::getFormatFromFileExtension(ext);
+    //Bitmap::ExportFlags flags = Bitmap::ExportFlags::None;
+    //flags |= Bitmap::ExportFlags::ExportAlpha;
+    //std::string path = "D:/Projects/temp/wowwowowowow.ext";
     //mOutputTex->captureToFile(0, 0, path, fileformat, flags, false /* async */);
 
     mFrameCount++;

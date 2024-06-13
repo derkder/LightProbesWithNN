@@ -447,6 +447,36 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
     else return gScene.envMap.eval(primaryRayDir);
 }
 
+float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
+{
+    float radius = 0.055f;
+    float3 outColor = float3(0.f);
+    float theta = M_PI * pixel.y / frameDim.y; ;
+    float phi = 2 * M_PI * pixel.x / frameDim.x;
+    float x = radius * sin(theta) * cos(phi);
+    float z = radius * sin(theta) * sin(phi);
+    float y = radius * cos(theta);
+    float3 primaryRayOrigin = float3(x, y, z) + kProbeLoc;
+    const float3 primaryRayDir = normalize(float3(x, y, z));
+
+    // 直接发射光线，移除使用 gbuffer的逻辑
+    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
+    ScatterRayData rayData = ScatterRayData(sg);
+    rayData.origin = primaryRayOrigin;
+    rayData.direction = primaryRayDir;
+    float3 radiance1 = float3(0.f);
+    for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
+    {
+        // if (1 == depth) return rayData.radiance;
+        traceScatterRay(rayData);
+        if (0 == depth) radiance1 = rayData.radiance;
+    }
+
+    // Store contribution from scatter ray.
+    outColor += rayData.radiance;
+    return outColor;
+}
+
 /**
  * This is the main entry point for the minimal path tracer.
  *
@@ -723,7 +753,7 @@ void rayGen()
     // }
 
 
-    float3 color = MyTracePath(probePos, pixel, frameDim);
+    float3 color = MyTracePathMap(pixel, frameDim);
 
     gOutputColor[pixel] = float4(color, 1.f);
 }
