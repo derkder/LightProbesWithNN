@@ -449,7 +449,7 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
-    float radius = 0.055f;
+    float radius = 0.011f;
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y; ;
     float phi = 2 * M_PI * pixel.x / frameDim.x;
@@ -474,7 +474,7 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 
     // Store contribution from scatter ray.
     outColor += rayData.radiance;
-    return outColor;
+    return outColor - radiance1;
 }
 
 /**
