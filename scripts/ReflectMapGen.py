@@ -20,3 +20,16 @@ def render_graph_ReflectMapGen():
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
 except NameError: None
+
+m.loadScene("D:\Projects\LightProbesWithNN\MyScene\cornell_box.pyscene")
+n_collect_frames = 1600
+n_match_frames = 1500
+
+for i in range(n_collect_frames):
+    renderFrame()
+    if n_match_frames == i:
+        outputDir = "D:\Projects\LightProbesWithNN\dumped_data/frame_{:04d}".format(i)
+        os.makedirs(outputDir, exist_ok=True)
+        m.frameCapture.outputDir = outputDir
+        m.frameCapture.capture()
+    
