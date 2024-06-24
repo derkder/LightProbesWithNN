@@ -449,7 +449,7 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
-    float radius = 0.011f;
+    float radius = 0.012f;
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y; ;
     float phi = 2 * M_PI * pixel.x / frameDim.x;
@@ -457,24 +457,25 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
     float z = radius * sin(theta) * sin(phi);
     float y = radius * cos(theta);
     float3 primaryRayOrigin = float3(x, y, z) + kProbeLoc;
-    const float3 primaryRayDir = normalize(float3(x, y, z));
+    const float3 primaryRayDir = -normalize(float3(x, y, z));
 
-    // 直接发射光线，移除使用 gbuffer的逻辑
-    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
+    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); //random number generator
     ScatterRayData rayData = ScatterRayData(sg);
     rayData.origin = primaryRayOrigin;
     rayData.direction = primaryRayDir;
+    float3 radiance0 = float3(0.f);
     float3 radiance1 = float3(0.f);
     for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
         // if (1 == depth) return rayData.radiance;
         traceScatterRay(rayData);
-        if (0 == depth) radiance1 = rayData.radiance;
+        if (0 == depth) radiance0 = rayData.radiance;
+        if (1 == depth) radiance1 = rayData.radiance - radiance0;
     }
 
     // Store contribution from scatter ray.
-    outColor += rayData.radiance;
-    return outColor - radiance1;
+    outColor += rayData.radiance; // accumulate
+    return outColor;
 }
 
 /**
