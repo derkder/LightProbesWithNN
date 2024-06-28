@@ -27,6 +27,8 @@
  **************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "Core/SampleApp.h"
+#include "Scene/SceneBuilder.h"
 #include "RenderGraph/RenderPass.h"
 #include "RenderGraph/RenderPassHelpers.h"
 #include "Utils/Debug/PixelDebug.h"
@@ -50,6 +52,7 @@ public:
     FALCOR_PLUGIN_CLASS(PathTracer, "PathTracer", "Reference path tracer.");
 
     static ref<PathTracer> create(ref<Device> pDevice, const Properties& props) { return make_ref<PathTracer>(pDevice, props); }
+
 
     PathTracer(ref<Device> pDevice, const Properties& props);
 
@@ -97,11 +100,12 @@ private:
     bool renderRenderingUI(Gui::Widgets& widget);
     bool renderDebugUI(Gui::Widgets& widget);
     void renderStatsUI(Gui::Widgets& widget);
-    bool beginFrame(RenderContext* pRenderContext, const RenderData& renderData);
+    bool beginFrame(RenderContext* pRenderContext, const RenderData& renderData); // 这里的const:告诉编译器和其他程序员这个参数在函数内部不会被修改
     void endFrame(RenderContext* pRenderContext, const RenderData& renderData);
     void generatePaths(RenderContext* pRenderContext, const RenderData& renderData);
     void tracePass(RenderContext* pRenderContext, const RenderData& renderData, TracePass& tracePass);
     void resolvePass(RenderContext* pRenderContext, const RenderData& renderData);
+    ref<Scene> createMyScene();
 
     /** Static configuration. Changing any of these options require shader recompilation.
     */
@@ -158,6 +162,7 @@ private:
     bool                            mSERSupported = false;      ///< True if the device supports SER.
 
     // Internal state
+    ref<Device>                     curDevice;
     ref<Scene>                      mpScene;                    ///< The current scene, or nullptr if no scene loaded.
     ref<SampleGenerator>            mpSampleGenerator;          ///< GPU pseudo-random sample generator.
     std::unique_ptr<EnvMapSampler>  mpEnvMapSampler;            ///< Environment map sampler or nullptr if not used.

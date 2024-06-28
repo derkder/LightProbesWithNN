@@ -413,9 +413,29 @@ void PathTracer::setFrameDim(const uint2 frameDim)
     }
 }
 
+ref<Scene> PathTracer::createMyScene()
+{
+    SceneBuilder sceneBuilder(curDevice, Settings::getGlobalSettings(), SceneBuilder::Flags::Default);
+    auto quadMesh = TriangleMesh::createQuad();
+    auto lightMat = StandardMaterial::create(curDevice, "Light");
+    lightMat -> setEmissiveColor(float3(17, 12, 4)); // lightMat是ref<mat>类型，为了使用mat类的函数要用->
+    lightMat -> setEmissiveFactor(5);
+
+    auto sphereMesh = TriangleMesh::createSphere();
+    auto mySphere = StandardMaterial::create(curDevice, "MySphere");
+    auto camera = Camera("cam");
+    //camera 
+    //mySphere.baseColor = float4(0.5, 0.5, 0.5, 1.0)
+    //mySphere.roughness = 0.0
+    //mySphere.metallic = 1.0
+
+    return sceneBuilder.getScene();
+}
+
 void PathTracer::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
 {
-    mpScene = pScene;
+    //mpScene = pScene;
+    mpScene = createMyScene();
     mParams.frameCount = 0;
     mParams.frameDim = {};
     mParams.screenTiles = {};
