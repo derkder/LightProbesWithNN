@@ -533,6 +533,55 @@ namespace Mogwai
         }
     }
 
+    ref<Scene> Renderer::createMyScene(SceneBuilder::Flags buildFlags)
+    {
+        SceneBuilder sceneBuilder(getDevice(), getSettings(), buildFlags);
+        //std::cout << "asd";
+        // create material
+        auto lightMat = StandardMaterial::create(getDevice(), "Light");
+        lightMat->setEmissiveColor(float3(17, 12, 4)); // lightMat是ref<mat>类型，为了使用mat类的函数要用->
+        lightMat->setEmissiveFactor(5);
+        auto mySphereMat = StandardMaterial::create(getDevice(), "MySphere");
+        mySphereMat->setBaseColor(float4(0.5, 0.5, 0.5, 1.0));
+        mySphereMat->setRoughness(1.0f);
+        //mySphereMat->setMetallic(0.1f);
+        // auto QuadMat = StandardMaterial::create(curDevice, "Floor");
+        // QuadMat->setBaseColor(float4(0.725, 0.71, 0.68, 1.0));
+        // QuadMat->setRoughness(0.5f);
+
+        // create geometry
+        auto sphereMesh = TriangleMesh::createSphere();
+        auto quadMesh = TriangleMesh::createQuad();
+
+        // Create mesh instances
+        // light
+        Transform temp;
+        temp.setScaling(float3(0.13));
+        temp.setTranslation(float3(0, 0.549, 0));
+        temp.setRotationEulerDeg(float3(180, 0, 0));
+        sceneBuilder.addMeshInstance(sceneBuilder.addNode({"Light", temp.getMatrix()}), sceneBuilder.addTriangleMesh(quadMesh, lightMat));
+
+        // sphere
+        MeshID meshID = sceneBuilder.addTriangleMesh(sphereMesh, mySphereMat);
+        Transform temp2;
+        temp2.setScaling(float3(0.05));
+        temp2.setTranslation(float3(0., 0.275, 0));
+        temp2.setRotationEulerDeg(float3(0, 0, 0));
+        mySphereNodeID = sceneBuilder.addNode({"MySphere", temp2.getMatrix()});
+        mySphereNode = sceneBuilder.getNode(mySphereNodeID);
+        sceneBuilder.addMeshInstance(mySphereNodeID, meshID);
+
+        // camera
+        ref<Camera> pCamera = Camera::create();
+        pCamera->setPosition(float3(0, 0.28, 1.2));
+        pCamera->setTarget(float3(0, 0.28, 0));
+        pCamera->setUpVector(float3(0, 1, 0));
+        pCamera->setFocalLength(35.);
+        sceneBuilder.addCamera(pCamera);
+
+        return sceneBuilder.getScene();
+    }
+
     void Renderer::loadScene(std::filesystem::path path, SceneBuilder::Flags buildFlags)
     {
         if (mOptions.useSceneCache) buildFlags |= SceneBuilder::Flags::UseCache;
@@ -543,9 +592,12 @@ namespace Mogwai
             try
             {
                 TimeReport timeReport;
-                setScene(SceneBuilder(getDevice(), path, getSettings(), buildFlags).getScene());
+                ref<Scene> temp = createMyScene(buildFlags);
+                setScene(temp);
+                //setScene(SceneBuilder(getDevice(), path, getSettings(), buildFlags).getScene());
                 timeReport.measure("Loading scene (total)");
                 timeReport.printToLog();
+                sceneLoaded = true;
                 return;
             }
             catch (const ImporterError &e)
@@ -686,6 +738,19 @@ namespace Mogwai
 
         beginFrame(pRenderContext, pTargetFbo);
 
+        if (sceneLoaded)
+        {
+            Transform temp;
+            temp.setScaling(float3(0.05));
+            mySpherePos.y += 0.01f;
+            temp.setTranslation(mySpherePos);
+            temp.setRotationEulerDeg(float3(0, 0, 0));
+            mySphereNode.transform = temp.getMatrix();
+            mpScene -> updateNodeTransform(mySphereNodeID.get(), temp.getMatrix());
+            mpScene -> update(pRenderContext, getGlobalClock().getTime());
+            //Renderer::unloadScene();
+        }
+       
         // Clear frame buffer.
         const float4 clearColor(0.38f, 0.52f, 0.10f, 1);
         pRenderContext->clearFbo(pTargetFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
@@ -701,9 +766,10 @@ namespace Mogwai
 
                 // Accumulate scene update flags for each graph.
                 // The update flags are passed to the active graph, or accumulated until a graph becomes active to avoid missing updates.
-                for (auto& g : mGraphs)
+                for (auto& g : mGraphs) 
                 {
                     g.sceneUpdates |= sceneUpdates;
+                    //g.sceneUpdates |= Scene::UpdateFlags::GeometryMoved;
                 }
             }
 
@@ -955,3 +1021,5 @@ int main(int argc, char** argv)
 {
     return catchAndReportAllExceptions([&]() { return runMain(argc, argv); });
 }
+
+

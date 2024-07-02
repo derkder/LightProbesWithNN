@@ -413,29 +413,14 @@ void PathTracer::setFrameDim(const uint2 frameDim)
     }
 }
 
-ref<Scene> PathTracer::createMyScene()
-{
-    SceneBuilder sceneBuilder(curDevice, Settings::getGlobalSettings(), SceneBuilder::Flags::Default);
-    auto quadMesh = TriangleMesh::createQuad();
-    auto lightMat = StandardMaterial::create(curDevice, "Light");
-    lightMat -> setEmissiveColor(float3(17, 12, 4)); // lightMat是ref<mat>类型，为了使用mat类的函数要用->
-    lightMat -> setEmissiveFactor(5);
-
-    auto sphereMesh = TriangleMesh::createSphere();
-    auto mySphere = StandardMaterial::create(curDevice, "MySphere");
-    auto camera = Camera("cam");
-    //camera 
-    //mySphere.baseColor = float4(0.5, 0.5, 0.5, 1.0)
-    //mySphere.roughness = 0.0
-    //mySphere.metallic = 1.0
-
-    return sceneBuilder.getScene();
-}
-
 void PathTracer::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
 {
-    //mpScene = pScene;
-    mpScene = createMyScene();
+    //之前Mogwai会带着白白加载一个场景
+    mpScene = pScene;
+    //那AABB包围盒这些怎么算的呢
+    //mpScene = createMyScene();
+
+
     mParams.frameCount = 0;
     mParams.frameDim = {};
     mParams.screenTiles = {};
@@ -1142,6 +1127,8 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
 
 bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& renderData)
 {
+    //mpScene = createMyScene();
+
     const auto& pOutputColor = renderData.getTexture(kOutputColor);
     FALCOR_ASSERT(pOutputColor);
 
@@ -1456,4 +1443,52 @@ DefineList PathTracer::StaticParams::getDefines(const PathTracer& owner) const
     defines.add("OUTPUT_NRD_ADDITIONAL_DATA", "0");
 
     return defines;
+}
+
+ref<Scene> PathTracer::createMyScene()
+{
+    SceneBuilder sceneBuilder(mpDevice, Settings::getGlobalSettings(), SceneBuilder::Flags::Default);
+    std::cout << "asd";
+    // create material
+    auto lightMat = StandardMaterial::create(mpDevice, "Light");
+    lightMat->setEmissiveColor(float3(17, 12, 4)); // lightMat是ref<mat>类型，为了使用mat类的函数要用->
+    lightMat->setEmissiveFactor(5);
+    auto mySphereMat = StandardMaterial::create(mpDevice, "MySphere");
+    mySphereMat->setBaseColor(float4(0.5, 0.5, 0.5, 1.0));
+    mySphereMat->setRoughness(1.0f);
+    mySphereMat->setMetallic(0.1f);
+    //auto QuadMat = StandardMaterial::create(curDevice, "Floor");
+    //QuadMat->setBaseColor(float4(0.725, 0.71, 0.68, 1.0));
+    //QuadMat->setRoughness(0.5f);
+
+    // create geometry
+    auto sphereMesh = TriangleMesh::createSphere();
+    auto quadMesh = TriangleMesh::createQuad();
+
+    // Create mesh instances
+    // light
+    auto meshId = sceneBuilder.addTriangleMesh(quadMesh, lightMat);
+    Transform temp;
+    temp.setScaling(float3(0.13));
+    temp.setTranslation(float3((0, 0.549, 0)));
+    temp.setRotationEulerDeg(float3(180, 0, 0));
+    auto nodeId = sceneBuilder.addNode({"Light", temp.getMatrix()});
+    sceneBuilder.addMeshInstance(nodeId, meshId);
+    //walls and ceiling
+    //Transform temp;
+    temp.setScaling(float3(5.));
+    temp.setTranslation(float3((0, 2.5, 0)));
+    temp.setRotationEulerDeg(float3(0, 0, 0));
+    sceneBuilder.addMeshInstance(
+        sceneBuilder.addNode({"MySphere", temp.getMatrix()}), sceneBuilder.addTriangleMesh(sphereMesh, mySphereMat)
+    );
+
+    // camera
+    ref<Camera> pCamera = Camera::create();
+    pCamera->setPosition(float3(0, 0.28, 1.2));
+    pCamera->setTarget(float3(0, 0.28, 0));
+    pCamera->setUpVector(float3(0, 1, 0));
+    pCamera->setFocalLength(35.);
+    sceneBuilder.addCamera(pCamera);
+    return sceneBuilder.getScene();
 }

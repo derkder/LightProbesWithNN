@@ -154,6 +154,12 @@ namespace Mogwai
         };
 
         ref<Scene> mpScene;
+        NodeID mySphereNodeID;
+        SceneBuilder::Node emptyNode;
+        SceneBuilder::Node& mySphereNode = emptyNode;
+        float3 mySpherePos = float3(0.f, 0.275f, 0.f);
+        bool sceneLoaded = false;
+        bool scriptLoaded = false;
 
         void addGraph(const ref<RenderGraph>& pGraph);
         void setActiveGraph(const ref<RenderGraph>& pGraph);
@@ -165,6 +171,7 @@ namespace Mogwai
         void removeActiveGraph();
         void loadSceneDialog();
         void loadScene(std::filesystem::path path, SceneBuilder::Flags buildFlags = SceneBuilder::Flags::Default);
+        ref<Scene> createMyScene(SceneBuilder::Flags buildFlags);
         void unloadScene();
         void setScene(const ref<Scene>& pScene);
         ref<Scene> getScene() const;

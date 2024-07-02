@@ -1858,6 +1858,8 @@ namespace Falcor
         // TODO: Update light collection if we allow changing area lights.
     }
 
+
+
     Scene::UpdateFlags Scene::update(RenderContext* pRenderContext, double currentTime)
     {
         // Run scene update callback.

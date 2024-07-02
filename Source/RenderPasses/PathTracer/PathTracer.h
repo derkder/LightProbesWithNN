@@ -162,7 +162,6 @@ private:
     bool                            mSERSupported = false;      ///< True if the device supports SER.
 
     // Internal state
-    ref<Device>                     curDevice;
     ref<Scene>                      mpScene;                    ///< The current scene, or nullptr if no scene loaded.
     ref<SampleGenerator>            mpSampleGenerator;          ///< GPU pseudo-random sample generator.
     std::unique_ptr<EnvMapSampler>  mpEnvMapSampler;            ///< Environment map sampler or nullptr if not used.
