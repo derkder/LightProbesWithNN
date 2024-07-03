@@ -4062,8 +4062,11 @@ namespace Falcor
         FALCOR_ASSERT(nodeID < mSceneGraph.size());
 
         Node& node = mSceneGraph[nodeID];
+        float4x4 temp = node.transform;
         node.transform = validateTransformMatrix(transform);
         mpAnimationController->setNodeEdited(nodeID);
+
+        mUpdates |= UpdateFlags::GeometryMoved;
     }
 
     void Scene::getMeshVerticesAndIndices(MeshID meshID, const std::map<std::string, ref<Buffer>>& buffers)

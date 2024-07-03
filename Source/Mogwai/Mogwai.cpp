@@ -565,7 +565,7 @@ namespace Mogwai
         MeshID meshID = sceneBuilder.addTriangleMesh(sphereMesh, mySphereMat);
         Transform temp2;
         temp2.setScaling(float3(0.05));
-        temp2.setTranslation(float3(0., 0.275, 0));
+        temp2.setTranslation(mySpherePos);
         temp2.setRotationEulerDeg(float3(0, 0, 0));
         mySphereNodeID = sceneBuilder.addNode({"MySphere", temp2.getMatrix()});
         mySphereNode = sceneBuilder.getNode(mySphereNodeID);
@@ -738,17 +738,31 @@ namespace Mogwai
 
         beginFrame(pRenderContext, pTargetFbo);
 
+        //if (scriptLoaded)
+        //{
+        //    ref<Scene> temp = createMyScene(SceneBuilder::Flags::None);
+        //    setScene(temp);
+        //}
+        if (scriptLoaded)
+        {
+            unloadScene();
+            loadScene(mOptions.sceneFile);
+        }
+
         if (sceneLoaded)
         {
-            Transform temp;
-            temp.setScaling(float3(0.05));
-            mySpherePos.y += 0.01f;
-            temp.setTranslation(mySpherePos);
-            temp.setRotationEulerDeg(float3(0, 0, 0));
-            mySphereNode.transform = temp.getMatrix();
-            mpScene -> updateNodeTransform(mySphereNodeID.get(), temp.getMatrix());
-            mpScene -> update(pRenderContext, getGlobalClock().getTime());
-            //Renderer::unloadScene();
+            //Transform temp;
+            //temp.setScaling(float3(0.05));
+            //mySpherePos.y += 0.01f;
+            //temp.setTranslation(mySpherePos);
+            //temp.setRotationEulerDeg(float3(0, 0, 0));
+            //mySphereNode.transform = temp.getMatrix();
+            ////这里改成1绝对对了，传过去了node也该
+            //mpScene -> updateNodeTransform(1, temp.getMatrix()); // 可能这个NodeID不对？不能用get取得？
+            //int32_t temp0 = mySphereNodeID.get();
+            //mpScene -> update(pRenderContext, getGlobalClock().getTime());
+            mySpherePos.y += 0.05f;
+            scriptLoaded = true;
         }
        
         // Clear frame buffer.
