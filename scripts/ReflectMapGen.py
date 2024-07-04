@@ -21,15 +21,16 @@ ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
 except NameError: None
 
-m.loadScene("C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene")
+m.loadScene("D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene")
+# m.loadScene("C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene")
 n_collect_frames = 1600
 n_match_frames = 1500
 
-for i in range(n_collect_frames):
-    renderFrame()
-    if n_match_frames == i:
-        outputDir = "C:/Files/CGProject/NNLightProbes/dumped_data/frame_{:04d}".format(i)
-        os.makedirs(outputDir, exist_ok=True)
-        m.frameCapture.outputDir = outputDir
-        m.frameCapture.capture()
+# for i in range(n_collect_frames):
+#     renderFrame()
+#     if n_match_frames == i:
+#         outputDir = "C:/Files/CGProject/NNLightProbes/dumped_data/frame_{:04d}".format(i)
+#         os.makedirs(outputDir, exist_ok=True)
+#         m.frameCapture.outputDir = outputDir
+#         m.frameCapture.capture()
     

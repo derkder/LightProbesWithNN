@@ -1,5 +1,7 @@
 from falcor import *
 import re
+import os
+import json
 import random
 
 def render_graph_PathTracer():
@@ -20,9 +22,10 @@ def render_graph_PathTracer():
     g.markOutput("AccumulatePass.output")
     return g
 
-def modify_translation(file_path, line_number, x_range, y_range, z_range):
+# we could add random material param later
+def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range):
     # 读取文件内容
-    with open(file_path, 'r') as file:
+    with open(scene_path, 'r') as file:
         lines = file.readlines()
 
     # 修改特定行
@@ -39,21 +42,43 @@ def modify_translation(file_path, line_number, x_range, y_range, z_range):
             lines[line_number] = re.sub(r"translation=float3\(([^,]+), ([^,]+), ([^,]+)\)",
                                         f"translation=float3({new_x:.3f}, {new_y:.3f}, {new_z:.3f})", line)
 
-    # 写回文件
-    with open(file_path, 'w') as file:
+            pos = {
+                "new_x": new_x,
+                "new_y": new_y,
+                "new_z": new_z
+            }
+
+    # change pos in pyscene
+    with open(scene_path, 'w') as file:
         file.writelines(lines)
 
-    print("修改完成")
+    # record our new sphere pos in json file
+    if os.path.exists(json_path):
+        with open(json_path, 'r') as json_file:
+            data = json.load(json_file)
+    else:
+        data = []
+    data.append(pos)
+    with open(json_path, 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+    
+    print("sphere pos updated successfully")
+
+
+
+scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
+json_path = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
+pos_line_idx = 48 - 1 # file read idx start from 0 while vs_window start from 0 
+n_collect_frames = 16000000
+n_match_frames = 1500
+n_sample_count = 0
 
 PathTracer = render_graph_PathTracer()
 try: m.addGraph(PathTracer)
 except NameError: None
 
-file_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
-m.loadScene(file_path)
-n_collect_frames = 16000000
-n_match_frames = 1500
-n_sample_count = 0
+modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
+m.loadScene(scene_path)
 
 for i in range(n_collect_frames):
     i += 1 # 防止渲染的第一帧就要被保存下来
@@ -67,6 +92,6 @@ for i in range(n_collect_frames):
         n_sample_count += 1
 
         # move the probe and reload scene
-        modify_translation(file_path, 47, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
+        modify_translation(scene_path, json_path, 47, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
         m.unloadScene()
-        m.loadScene(file_path)
+        m.loadScene(scene_path)

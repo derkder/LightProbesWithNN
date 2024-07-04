@@ -111,6 +111,8 @@ private:
     float sliceZPercent = 0.65f;
     bool mIsCutting = true;
     bool isPerspective = false;
+    float3 mProbeLoc;
+    std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/info.json";
     std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
 
     // Ray tracing program.
@@ -120,6 +122,7 @@ private:
         ref<RtBindingTable> pBindingTable;
         ref<RtProgramVars> pVars;
     } mTracer;
+
 
     ref<ComputePass> mpResolvePass;
     ref<Texture> mOutputTex;

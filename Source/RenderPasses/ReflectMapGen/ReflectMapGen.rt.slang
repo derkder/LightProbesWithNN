@@ -71,6 +71,7 @@ cbuffer CB
 
     float3 gSceneAABBCenter;
     float3 gSceneAABBExtent;
+    float3 kProbeLoc;
     float gIntervalX;
     float gIntervalY;
     float gCurZ;
@@ -102,7 +103,6 @@ static const bool kUseEnvBackground = USE_ENV_BACKGROUND;
 static const float3 kDefaultBackgroundColor = float3(0, 0, 0);
 static const float kRayTMax = FLT_MAX;
 
-static const float3 kProbeLoc = float3(0.1, 0.275, 0.);
 //反过来不行是因为有球挡住了
 static const bool kIsInverted = false;
 static const int currentState = From_Left;
@@ -449,9 +449,9 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
-    float radius = 0.012f;
+    float radius = 0.007f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
-    float theta = M_PI * pixel.y / frameDim.y; ;
+    float theta = M_PI * pixel.y / frameDim.y;
     float phi = 2 * M_PI * pixel.x / frameDim.x;
     float x = radius * sin(theta) * cos(phi);
     float z = radius * sin(theta) * sin(phi);

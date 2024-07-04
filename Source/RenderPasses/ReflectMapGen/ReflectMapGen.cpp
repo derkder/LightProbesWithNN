@@ -28,7 +28,9 @@
 #include "ReflectMapGen.h"
 #include "RenderGraph/RenderPassHelpers.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
+#include "nlohmann/json.hpp"
 #include <iostream>
+#include <fstream>
 #include <chrono>
 
 extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registry)
@@ -229,6 +231,7 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     var["CB"]["gIntervalY"] = mIntervalY;
     var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * sliceZPercent; // posZ of light probe
     var["CB"]["gIsCutting"] = mIsCutting;
+    var["CB"]["kProbeLoc"] = mProbeLoc;
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.
     auto bind = [&](const ChannelDesc& desc)
@@ -392,6 +395,23 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
 
         minZ = mSceneAABBCenter.z - mSceneAABBExtent.z / 2;
         maxZ = mSceneAABBCenter.z + mSceneAABBExtent.z / 2;
+
+        std::ifstream file(json_path);
+        if (!file.is_open())
+        {
+            std::cout << "Failed to open JSON file" << std::endl;
+        }
+        nlohmann::json data;
+        file >> data;
+        if (data.empty())
+        {
+            std::cout << "JSON file is empty" << std::endl;
+        }
+
+        // 获取最后一个元素
+        auto latest = data.back();
+        mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
+        std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
     }
 }
 
