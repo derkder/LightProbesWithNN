@@ -104,8 +104,8 @@ private:
     //uint probeNumsY = 1080;
     uint probeNumsX = 1000;
     uint probeNumsY = 1000;
-    uint sampleNumsX = 1920;
-    uint sampleNumsY = 1080;
+    uint sampleNumsX = 1000;
+    uint sampleNumsY = 1000;
     float minZ;
     float maxZ;
     float sliceZPercent = 0.65f;
