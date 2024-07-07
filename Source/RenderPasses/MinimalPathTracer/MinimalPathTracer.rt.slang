@@ -337,6 +337,7 @@ bool generateScatterRay(const ShadingData sd, const IMaterialInstance mi, bool i
  */
 void handleHit(const HitInfo hit, inout ScatterRayData rayData)
 {
+    //我认为这之前只算了碰撞的信息，完全没计算光照什么的，然后这个handleHit就是在算要加多少radiance到raydata上
     const bool isCurveHit = hit.getType() == HitType::Curve;
     let lod = ExplicitLodTextureSampler(0.f);
 
@@ -349,7 +350,7 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     // Add emitted light.
     if (kUseEmissiveLights && (kComputeDirect || rayData.pathLength > 0))
     {
-        rayData.radiance += rayData.thp * mi.getProperties(sd).emission;
+        rayData.radiance += rayData.thp * mi.getProperties(sd).emission;//就指着这里撞到的是光然后就有值了
     }
 
     // Check whether to terminate based on max depth.
@@ -553,6 +554,7 @@ void scatterTriangleMeshAnyHit(inout ScatterRayData rayData, BuiltInTriangleInte
         IgnoreHit();
 }
 
+//我确保本次撞击肯定是最近的时候就会调用这个shader
 [shader("closesthit")]
 void scatterTriangleMeshClosestHit(inout ScatterRayData rayData, BuiltInTriangleIntersectionAttributes attribs)
 {

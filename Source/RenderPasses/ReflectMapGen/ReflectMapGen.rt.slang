@@ -95,7 +95,7 @@ RWTexture2D<float4> gOutputColor;
 
 static const uint kMaxBounces = MAX_BOUNCES;
 static const bool kComputeDirect = COMPUTE_DIRECT;
-static const bool kUseImportanceSampling = USE_IMPORTANCE_SAMPLING;
+static const bool kUseImportanceSampling = true;
 static const bool kUseAnalyticLights = USE_ANALYTIC_LIGHTS;
 static const bool kUseEmissiveLights = USE_EMISSIVE_LIGHTS;
 static const bool kUseEnvLight = USE_ENV_LIGHT;

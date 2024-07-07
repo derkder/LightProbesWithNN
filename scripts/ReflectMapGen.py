@@ -23,31 +23,27 @@ def render_graph_ReflectMapGen():
 
 # we could add random material param later
 def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range):
-    # 读取文件内容
+    # change pos in pyscene
     with open(scene_path, 'r') as file:
         lines = file.readlines()
 
-    # 修改特定行
+    # find line to sphere probe pos
     line = lines[line_number]
     if "translation=float3(" in line:
         match = re.search(r"translation=float3\(([^,]+), ([^,]+), ([^,]+)\)", line)
         if match:
-            # 生成新的随机数
+            # generate ner pos
             new_x = random.uniform(*x_range)
             new_y = random.uniform(*y_range)
             new_z = random.uniform(*z_range)
-            
-            # 更新行内容
             lines[line_number] = re.sub(r"translation=float3\(([^,]+), ([^,]+), ([^,]+)\)",
                                         f"translation=float3({new_x:.3f}, {new_y:.3f}, {new_z:.3f})", line)
-
             pos = {
                 "new_x": new_x,
                 "new_y": new_y,
                 "new_z": new_z
             }
 
-    # change pos in pyscene
     with open(scene_path, 'w') as file:
         file.writelines(lines)
 
@@ -67,13 +63,13 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
 # scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
 scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
 # output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data"
-output_path = "D:/Projects/LightProbesWithNN/dumped_data"
+output_path = "D:/Projects/LightProbesWithNN/dumped_data/temp"
 # json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/info.json"
-json_path = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
+json_path = "D:/Projects/LightProbesWithNN/dumped_data/temp/info.json"
 pos_line_idx = 48 - 1 # file read idx start from 0 while vs_window start from 0 
 n_collect_frames = 30000000
-n_match_frames = 1500
-n_sample_count = 0
+n_match_frames = 100000
+n_sample_count = 7
 
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
