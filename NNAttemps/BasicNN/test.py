@@ -1,14 +1,12 @@
-import json
+import torch
+import torch.nn as nn
 import numpy as np
 import OpenEXR
 import Imath
-import os
-import torch
+import json
 from torch.utils.data import Dataset, DataLoader
-import torch.nn as nn
-import torch.optim as optim
 
-# Function to read EXR file
+# 定义读取EXR文件的函数
 def read_exr(file_path):
     exr_file = OpenEXR.InputFile(file_path)
     dw = exr_file.header()['dataWindow']
@@ -18,7 +16,7 @@ def read_exr(file_path):
     rgb = [np.reshape(c, size) for c in rgb]
     return np.stack(rgb, axis=-1)
 
-# Function to generate primaryRayOrigin and rayDir
+# 定义生成光线的函数
 def generate_rays(frame_dim, radius, kProbeLoc):
     primary_ray_origins = []
     ray_dirs = []
@@ -36,7 +34,7 @@ def generate_rays(frame_dim, radius, kProbeLoc):
             ray_dirs.append(ray_dir)
     return np.array(primary_ray_origins), np.array(ray_dirs)
 
-# Custom Dataset
+# 定义自定义数据集
 class LightProbeDataset(Dataset):
     def __init__(self, exr_files, json_file, frame_dim, radius):
         self.exr_files = exr_files
@@ -65,7 +63,8 @@ class LightProbeDataset(Dataset):
     def __getitem__(self, idx):
         primary_ray_origin, ray_dir, rgb = self.data[idx]
         return torch.tensor(primary_ray_origin, dtype=torch.float32), torch.tensor(ray_dir, dtype=torch.float32), torch.tensor(rgb, dtype=torch.float32)
-    
+
+# 定义神经网络模型
 class LightProbeNN(nn.Module):
     def __init__(self):
         super(LightProbeNN, self).__init__()
@@ -82,78 +81,39 @@ class LightProbeNN(nn.Module):
         x = self.fc4(x)
         return x
 
+# 加载测试数据
+sample_count = 2
+test_exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/test/frame_{i:04d}/Mogwai.AccumulatePass.output.3000.exr" for i in range(sample_count)]
+test_json_file = "D:/Projects/LightProbesWithNN/dumped_data/test/info.json"
+test_frame_dim = (1000, 1000)  # 替换为你的测试帧尺寸
+test_radius = 0.005  # 替换为你的测试半径
+test_dataset = LightProbeDataset(test_exr_files, test_json_file, test_frame_dim, test_radius)
+test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+print(f"Number of test samples: {len(test_dataset)}")
 
-
-
-# Load Data
-sample_count = 5
-exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/frame_{i:04d}/Mogwai.AccumulatePass.output.3000.exr" for i in range(sample_count)]
-json_file = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
-frame_dim = (1000, 1000)
-radius = 0.005
-dataset = LightProbeDataset(exr_files, json_file, frame_dim, radius)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-print(f"Number of samples: {len(dataset)}")
-
-# Initialize the network, loss function and optimizer
+# 加载训练好的模型
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = LightProbeNN().to(device)
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-print("Network Initialized")
+model.load_state_dict(torch.load("NNAttemps/BasicNN/models/best_light_probe_model.pth"))
+model.eval()  # 设置模型为评估模式
+print("Model loaded and set to evaluation mode")
 
-
-best_loss = float('inf')
-loss_model_path = r"model\best_light_probe_model.pth"
-final_model_path = r"model\best_light_probe_model.pth"
-# Train the model
-num_epochs = 10
-for epoch in range(num_epochs):
-    for primary_ray_origin, ray_dir, rgb in dataloader:
+# 进行推理
+with torch.no_grad():  # 在推理时不需要计算梯度
+    for primary_ray_origin, ray_dir, rgb in test_dataloader:
         primary_ray_origin = primary_ray_origin.to(device)
         ray_dir = ray_dir.to(device)
         rgb = rgb.to(device)
 
-        optimizer.zero_grad()
         outputs = model(primary_ray_origin, ray_dir)
-        loss = criterion(outputs, rgb)
-        loss.backward()
-        optimizer.step()
-    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
-    if loss.item() < best_loss:
-        best_loss = loss.item()
-        torch.save(model.state_dict(), loss_model_path)
-        print(f"Saved better model with Loss: {loss.item():.4f}")
+        
+        # 这里可以根据需要处理输出，例如计算误差、保存结果等
+        # 例如，计算与真实RGB值的均方误差
+        mse_loss = nn.MSELoss()(outputs, rgb)
+        print(f"Test Loss: {mse_loss.item():.4f}")
 
-# Save the model
-torch.save(model.state_dict(), "final_model_path")
+        # 如果需要保存输出结果，可以将其转换为numpy数组并保存
+        outputs_np = outputs.cpu().numpy()
+        # 保存或处理outputs_np...
 
-
-
-# num_epochs = 10
-# for epoch in range(num_epochs):
-#     model.train()  # 确保模型处于训练模式
-#     total_loss = 0
-#     count = 0
-#     for primary_ray_origin, ray_dir, rgb in dataloader:
-#         primary_ray_origin = primary_ray_origin.to(device)
-#         ray_dir = ray_dir.to(device)
-#         rgb = rgb.to(device)
-
-#         optimizer.zero_grad()
-#         outputs = model(primary_ray_origin, ray_dir)
-#         loss = criterion(outputs, rgb)
-#         loss.backward()
-#         optimizer.step()
-
-#         total_loss += loss.item()
-#         count += 1
-
-#     average_loss = total_loss / count
-#     print(f"Epoch [{epoch+1}/{num_epochs}], Training Loss: {average_loss:.4f}")
-
-#     # 如果当前训练损失是最低的，保存模型
-#     if average_loss < best_loss:
-#         best_loss = average_loss
-#         torch.save(model.state_dict(), model_path)
-#         print(f"Saved better model with Training Loss: {average_loss:.4f}")
+print("Inference completed")

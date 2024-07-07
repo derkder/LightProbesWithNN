@@ -1,4 +1,7 @@
 # Build folder.
+/dumped_data/
+
+# Build folder.
 /build/
 
 # Test output folder.
