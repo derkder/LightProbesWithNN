@@ -2,12 +2,10 @@ import json
 import numpy as np
 import OpenEXR
 import Imath
-import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.optim as optim
-
 
 # Function to read EXR file
 def read_exr(file_path):
@@ -66,7 +64,8 @@ class LightProbeDataset(Dataset):
     def __getitem__(self, idx):
         hit_point, ray_dir, rgb = self.data[idx]
         return torch.tensor(hit_point, dtype=torch.float32), torch.tensor(ray_dir, dtype=torch.float32), torch.tensor(rgb, dtype=torch.float32)
-    
+
+# Neural Network Model
 class LightProbeNN(nn.Module):
     def __init__(self):
         super(LightProbeNN, self).__init__()
@@ -83,13 +82,8 @@ class LightProbeNN(nn.Module):
         x = self.fc4(x)
         return x
 
-
-
-
 # Load Data
 sample_count = 10
-# exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/frame_{i:04d}/Mogwai.AccumulatePass.output.3000.exr" for i in range(sample_count)]
-# json_file = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
 exr_files = [f"C:/Files/CGProject/NNLightProbes/dumped_data/dim500/all/train/frame_{i:04d}/Mogwai.AccumulatePass.output.100000.exr" for i in range(sample_count)]
 json_file = "C:/Files/CGProject/NNLightProbes/dumped_data/dim500/all/train/info.json"
 frame_dim = (500, 500)
@@ -103,17 +97,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = LightProbeNN().to(device)
 print(f"Using device: {device}")
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)  # Reduced learning rate
 print("Network Initialized")
 
-
 best_loss = float('inf')
-loss_model_path = "NNAttemps/BasicNN/models/best_light_probe_model.pth"
-final_model_path = "NNAttemps/BasicNN/models/final_light_probe_model.pth"
+loss_model_path = "NNAttemps/FasterBasicNN/models/best_light_probe_model.pth"
+final_model_path = "NNAttemps/FasterBasicNN/models/final_light_probe_model.pth"
+
 # Train the model
 num_epochs = 10
 for epoch in range(num_epochs):
-    for hit_point, ray_dir, rgb in dataloader:
+    epoch_loss = 0
+    model.train()
+    for i, (hit_point, ray_dir, rgb) in enumerate(dataloader):
         hit_point = hit_point.to(device)
         ray_dir = ray_dir.to(device)
         rgb = rgb.to(device)
@@ -123,11 +119,19 @@ for epoch in range(num_epochs):
         loss = criterion(outputs, rgb)
         loss.backward()
         optimizer.step()
-    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
-    if loss.item() < best_loss:
-        best_loss = loss.item()
+
+        epoch_loss += loss.item()
+
+        # if i % 10 == 0:  # Print progress every 10 batches
+        #     print(f"Epoch [{epoch+1}/{num_epochs}], Batch [{i+1}/{len(dataloader)}], Loss: {loss.item():.4f}")
+
+    epoch_loss /= len(dataloader)
+    print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {epoch_loss:.4f}")
+
+    if epoch_loss < best_loss:
+        best_loss = epoch_loss
         torch.save(model.state_dict(), loss_model_path)
-        print(f"Saved better model with Loss: {loss.item():.4f}")
+        print(f"Saved better model with Loss: {epoch_loss:.4f}")
 
 # Save the model
 torch.save(model.state_dict(), final_model_path)
