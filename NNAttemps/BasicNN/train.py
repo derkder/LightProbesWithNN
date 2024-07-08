@@ -7,7 +7,30 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
+ 
+# print(torch.__version__)
+# print(torch.cuda.is_available())
+# print(torch.version.cuda)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# print(device)
+
+# Function to save EXR file
+def save_exr(file_path, rgb_data):
+    height, width, _ = rgb_data.shape
+    header = OpenEXR.Header(width, height)
+    FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
+    
+    # Split the RGB data into separate channels
+    r = rgb_data[:, :, 0].astype(np.float32).tobytes()
+    g = rgb_data[:, :, 1].astype(np.float32).tobytes()
+    b = rgb_data[:, :, 2].astype(np.float32).tobytes()
+    
+    # Create an EXR file and write the channels
+    exr_file = OpenEXR.OutputFile(file_path, header)
+    exr_file.writePixels({'R': r, 'G': g, 'B': b})
+    exr_file.close()
 
 # Function to read EXR file
 def read_exr(file_path):
@@ -15,9 +38,19 @@ def read_exr(file_path):
     dw = exr_file.header()['dataWindow']
     size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
     FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
+    
+    # Read the RGB channels
     rgb = [np.frombuffer(exr_file.channel(c, FLOAT), dtype=np.float32) for c in "RGB"]
-    rgb = [np.reshape(c, size) for c in rgb]
-    return np.stack(rgb, axis=-1)
+    rgb = [np.reshape(c, (size[1], size[0])) for c in rgb]  # Note the order of size
+    
+    # Stack the channels to form an (H, W, 3) array
+    stacked_rgb = np.stack(rgb, axis=-1)
+    save_exr('stacked_rgb.exr', stacked_rgb)
+    # Crop to the first 500 rows and 500 columns
+    cropped_rgb = stacked_rgb[:500, :500, :]
+    save_exr('cropped_rgb.exr', cropped_rgb)
+    
+    return cropped_rgb
 
 # Function to generate primaryRayOrigin and rayDir
 def generate_rays(frame_dim, radius, kProbeLoc):
@@ -88,10 +121,10 @@ class LightProbeNN(nn.Module):
 
 # Load Data
 sample_count = 10
-# exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/frame_{i:04d}/Mogwai.AccumulatePass.output.3000.exr" for i in range(sample_count)]
-# json_file = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
-exr_files = [f"C:/Files/CGProject/NNLightProbes/dumped_data/dim500/all/train/frame_{i:04d}/Mogwai.AccumulatePass.output.100000.exr" for i in range(sample_count)]
-json_file = "C:/Files/CGProject/NNLightProbes/dumped_data/dim500/all/train/info.json"
+exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/dim500/train/frame_{i:04d}/Mogwai.AccumulatePass.output.100000.exr" for i in range(sample_count)]
+json_file = "D:/Projects/LightProbesWithNN/dumped_data/dim500/train/info.json"
+# exr_files = [f"C:/Files/CGProject/NNLightProbes/dumped_data/dim500/all/train/frame_{i:04d}/Mogwai.AccumulatePass.output.100000.exr" for i in range(sample_count)]
+# json_file = "C:/Files/CGProject/NNLightProbes/dumped_data/dim500/all/train/info.json"
 frame_dim = (500, 500)
 radius = 0.005
 dataset = LightProbeDataset(exr_files, json_file, frame_dim, radius)
@@ -104,14 +137,15 @@ model = LightProbeNN().to(device)
 print(f"Using device: {device}")
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 print("Network Initialized")
 
-
+losses = []
 best_loss = float('inf')
-loss_model_path = "NNAttemps/BasicNN/models/best_light_probe_model.pth"
-final_model_path = "NNAttemps/BasicNN/models/final_light_probe_model.pth"
+loss_model_path = "NNAttemps/BasicNN/models/best_light_probe_model3.pth"
+final_model_path = "NNAttemps/BasicNN/models/final_light_probe_model3.pth"
 # Train the model
-num_epochs = 10
+num_epochs = 20
 for epoch in range(num_epochs):
     for hit_point, ray_dir, rgb in dataloader:
         hit_point = hit_point.to(device)
@@ -124,6 +158,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
     print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
+    losses.append(loss.item())
     if loss.item() < best_loss:
         best_loss = loss.item()
         torch.save(model.state_dict(), loss_model_path)
@@ -131,3 +166,11 @@ for epoch in range(num_epochs):
 
 # Save the model
 torch.save(model.state_dict(), final_model_path)
+
+# plot the loss
+plt.plot(range(1, num_epochs + 1), losses, marker='o')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training Loss per Epoch')
+plt.grid(True)
+plt.show()

@@ -1,5 +1,6 @@
-# Build folder.
+# data collected
 /dumped_data/
+/dumped_data_ori/
 
 # Build folder.
 /build/
