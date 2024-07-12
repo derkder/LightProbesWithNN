@@ -1,24 +1,51 @@
 import torch
 import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import OpenEXR
 import Imath
 import json
-from torch.utils.data import Dataset, DataLoader
+import os
 
-# 定义读取EXR文件的函数
+# Function to save EXR file
+def save_exr(file_path, rgb_data):
+    height, width, _ = rgb_data.shape
+    header = OpenEXR.Header(width, height)
+    FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
+    
+    # Split the RGB data into separate channels
+    r = rgb_data[:, :, 0].astype(np.float32).tobytes()
+    g = rgb_data[:, :, 1].astype(np.float32).tobytes()
+    b = rgb_data[:, :, 2].astype(np.float32).tobytes()
+    
+    # Create an EXR file and write the channels
+    exr_file = OpenEXR.OutputFile(file_path, header)
+    exr_file.writePixels({'R': r, 'G': g, 'B': b})
+    exr_file.close()
+
+# Function to read EXR file
 def read_exr(file_path):
     exr_file = OpenEXR.InputFile(file_path)
     dw = exr_file.header()['dataWindow']
     size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
     FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
+    
+    # Read the RGB channels
     rgb = [np.frombuffer(exr_file.channel(c, FLOAT), dtype=np.float32) for c in "RGB"]
-    rgb = [np.reshape(c, size) for c in rgb]
-    return np.stack(rgb, axis=-1)
+    rgb = [np.reshape(c, (size[1], size[0])) for c in rgb]  # Note the order of size
+    
+    # Stack the channels to form an (H, W, 3) array
+    stacked_rgb = np.stack(rgb, axis=-1)
+    
+    # Crop to the first 500 rows and 500 columns
+    cropped_rgb = stacked_rgb[:500, :500, :]
+    
+    return cropped_rgb
 
-# 定义生成光线的函数
+# Function to generate primaryRayOrigin and rayDir
 def generate_rays(frame_dim, radius, kProbeLoc):
-    primary_ray_origins = []
+    hit_points = []
     ray_dirs = []
     for y in range(frame_dim[1]):
         for x in range(frame_dim[0]):
@@ -27,14 +54,14 @@ def generate_rays(frame_dim, radius, kProbeLoc):
             x_val = radius * np.sin(theta) * np.cos(phi)
             z_val = radius * np.sin(theta) * np.sin(phi)
             y_val = radius * np.cos(theta)
-            primary_ray_origin = np.array([x_val, y_val, z_val]) + kProbeLoc
+            hit_point = np.array([x_val, y_val, z_val]) + kProbeLoc
             ray_dir = np.array([x_val, y_val, z_val])
-            ray_dir = ray_dir / np.linalg.norm(ray_dir)
-            primary_ray_origins.append(primary_ray_origin)
+            ray_dir = - ray_dir / np.linalg.norm(ray_dir)
+            hit_points.append(hit_point)
             ray_dirs.append(ray_dir)
-    return np.array(primary_ray_origins), np.array(ray_dirs)
+    return np.array(hit_points), np.array(ray_dirs)
 
-# 定义自定义数据集
+# Custom Dataset
 class LightProbeDataset(Dataset):
     def __init__(self, exr_files, json_file, frame_dim, radius):
         self.exr_files = exr_files
@@ -51,20 +78,19 @@ class LightProbeDataset(Dataset):
         for i, exr_file in enumerate(self.exr_files):
             kProbeLoc = np.array(self.kProbeLocs[i])
             rgb_values = read_exr(exr_file)
-            primary_ray_origins, ray_dirs = generate_rays(self.frame_dim, self.radius, kProbeLoc)
+            hit_points, ray_dirs = generate_rays(self.frame_dim, self.radius, kProbeLoc)
             for j in range(self.frame_dim[0] * self.frame_dim[1]):
-                data.append((primary_ray_origins[j], ray_dirs[j], rgb_values[j // self.frame_dim[1], j % self.frame_dim[0]]))
+                data.append((hit_points[j], ray_dirs[j], rgb_values[j // self.frame_dim[1], j % self.frame_dim[0]], i))
             print(f"Processed {i+1}/{len(self.exr_files)}")
         return data
 
     def __len__(self):
         return len(self.data)
-
+    
     def __getitem__(self, idx):
-        primary_ray_origin, ray_dir, rgb = self.data[idx]
-        return torch.tensor(primary_ray_origin, dtype=torch.float32), torch.tensor(ray_dir, dtype=torch.float32), torch.tensor(rgb, dtype=torch.float32)
+        hit_point, ray_dir, rgb, group_idx = self.data[idx]
+        return torch.tensor(hit_point, dtype=torch.float32), torch.tensor(ray_dir, dtype=torch.float32), torch.tensor(rgb, dtype=torch.float32), group_idx
 
-# 定义神经网络模型
 class LightProbeNN(nn.Module):
     def __init__(self):
         super(LightProbeNN, self).__init__()
@@ -73,47 +99,67 @@ class LightProbeNN(nn.Module):
         self.fc3 = nn.Linear(256, 128)
         self.fc4 = nn.Linear(128, 3)
 
-    def forward(self, primary_ray_origin, ray_dir):
-        x = torch.cat((primary_ray_origin, ray_dir), dim=1)
+    def forward(self, hit_point, ray_dir):
+        x = torch.cat((hit_point, ray_dir), dim=1)
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = torch.relu(self.fc3(x))
         x = self.fc4(x)
         return x
 
-# 加载测试数据
-sample_count = 2
-test_exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/test/frame_{i:04d}/Mogwai.AccumulatePass.output.3000.exr" for i in range(sample_count)]
-test_json_file = "D:/Projects/LightProbesWithNN/dumped_data/test/info.json"
-test_frame_dim = (1000, 1000)  # 替换为你的测试帧尺寸
-test_radius = 0.005  # 替换为你的测试半径
-test_dataset = LightProbeDataset(test_exr_files, test_json_file, test_frame_dim, test_radius)
+# Load Data
+test_sample_count = 3  # Number of test samples
+test_exr_files = [f"D:/Projects/LightProbesWithNN/dumped_data/dim500/test/frame_{i:04d}/Mogwai.AccumulatePass.output.100000.exr" for i in range(test_sample_count)]
+test_json_file = "D:/Projects/LightProbesWithNN/dumped_data/dim500/test/info.json"
+model_file = "D:/Projects/LightProbesWithNN/NNAttemps/BasicNN/models/best_light_probe_model3.pth"
+frame_dim = (500, 500)
+radius = 0.005
+test_dataset = LightProbeDataset(test_exr_files, test_json_file, frame_dim, radius)
 test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 print(f"Number of test samples: {len(test_dataset)}")
 
-# 加载训练好的模型
+# Load the trained model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = LightProbeNN().to(device)
-model.load_state_dict(torch.load("NNAttemps/BasicNN/models/best_light_probe_model.pth"))
-model.eval()  # 设置模型为评估模式
-print("Model loaded and set to evaluation mode")
+model.load_state_dict(torch.load(model_file))
+model.eval()
+print("Model loaded")
 
-# 进行推理
-with torch.no_grad():  # 在推理时不需要计算梯度
-    for primary_ray_origin, ray_dir, rgb in test_dataloader:
-        primary_ray_origin = primary_ray_origin.to(device)
+# Initialize loss function
+criterion = nn.MSELoss()
+
+# Evaluate the model
+total_loss = 0.0
+output_images = {i: [] for i in range(test_sample_count)}
+group_losses = {i: 0.0 for i in range(test_sample_count)}
+group_counts = {i: 0 for i in range(test_sample_count)}
+
+with torch.no_grad():
+    for hit_point, ray_dir, rgb, group_idx in test_dataloader:
+        hit_point = hit_point.to(device)
         ray_dir = ray_dir.to(device)
         rgb = rgb.to(device)
+        group_idx = group_idx.numpy()
 
-        outputs = model(primary_ray_origin, ray_dir)
-        
-        # 这里可以根据需要处理输出，例如计算误差、保存结果等
-        # 例如，计算与真实RGB值的均方误差
-        mse_loss = nn.MSELoss()(outputs, rgb)
-        print(f"Test Loss: {mse_loss.item():.4f}")
+        outputs = model(hit_point, ray_dir)
+        loss = criterion(outputs, rgb)
+        total_loss += loss.item()
 
-        # 如果需要保存输出结果，可以将其转换为numpy数组并保存
-        outputs_np = outputs.cpu().numpy()
-        # 保存或处理outputs_np...
+        # Collect outputs for EXR generation and calculate group losses
+        for i, idx in enumerate(group_idx):
+            output_images[idx].append(outputs[i].cpu().numpy())
+            group_losses[idx] += criterion(outputs[i], rgb[i]).item()
+            group_counts[idx] += 1
 
-print("Inference completed")
+# Calculate average loss for each group
+average_group_losses = {idx: group_losses[idx] / group_counts[idx] for idx in group_losses}
+
+# Print average loss for each group
+for idx, avg_loss in average_group_losses.items():
+    print(f"Test Loss for group {idx}: {avg_loss:.4f}")
+
+# Generate EXR files from model outputs
+for idx, images in output_images.items():
+    images = np.concatenate(images, axis=0)
+    images = images.reshape((frame_dim[1], frame_dim[0], 3))  # Reshape to (500, 500, 3)
+    save_exr(f'output00_{idx}.exr', images)

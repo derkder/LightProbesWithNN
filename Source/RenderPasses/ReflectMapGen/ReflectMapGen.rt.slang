@@ -437,6 +437,9 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
     for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
         //if (1 == depth) return rayData.radiance;
+        if(0 == depth){
+            //should fake the first bounce
+        }
         traceScatterRay(rayData);
         if(0 == depth) radiance1 = rayData.radiance;
     }

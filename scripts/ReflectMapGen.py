@@ -22,7 +22,7 @@ def render_graph_ReflectMapGen():
     return g
 
 # we could add random material param later
-def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range):
+def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range, idx):
     # change pos in pyscene
     with open(scene_path, 'r') as file:
         lines = file.readlines()
@@ -39,6 +39,7 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
             lines[line_number] = re.sub(r"translation=float3\(([^,]+), ([^,]+), ([^,]+)\)",
                                         f"translation=float3({new_x:.3f}, {new_y:.3f}, {new_z:.3f})", line)
             pos = {
+                "idx": idx,
                 "new_x": new_x,
                 "new_y": new_y,
                 "new_z": new_z
@@ -69,18 +70,20 @@ json_path = "D:/Projects/LightProbesWithNN/dumped_data/temp/info.json"
 pos_line_idx = 48 - 1 # file read idx start from 0 while vs_window start from 0 
 n_collect_frames = 30000000
 n_match_frames = 100000
-n_sample_count = 7
+n_sample_count = 0
 
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
 except NameError: None
 
-modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
+modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), 0)
 m.loadScene(scene_path)
 
 for i in range(n_collect_frames):
     i += 1 # 防止渲染的第一帧就要被保存下来
     renderFrame()
+
+    # we`ve run 100000 frames and want to save the render output
     if 0 == (i % n_match_frames):
         # save output
         file_name_format = "frame_{:04d}".format(n_sample_count)
@@ -91,7 +94,7 @@ for i in range(n_collect_frames):
         n_sample_count += 1
 
         # move the probe and reload scene
-        modify_translation(scene_path, json_path, 47, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
+        modify_translation(scene_path, json_path, 47, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
         m.unloadScene()
         m.loadScene(scene_path)
 
