@@ -607,6 +607,8 @@ void scatterTriangleMeshAnyHit(inout ScatterRayData rayData, BuiltInTriangleInte
     GeometryInstanceID instanceID = getGeometryInstanceID();
     VertexData v = getVertexData(instanceID, PrimitiveIndex(), attribs);
     const uint materialID = gScene.getMaterialID(instanceID);
+    if(0 ==  materialID && 0 != rayData.pathLength)
+        IgnoreHit();
     if (gScene.materials.alphaTest(v, materialID, 0.f))
         IgnoreHit();
 }

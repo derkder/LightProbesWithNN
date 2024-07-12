@@ -2894,7 +2894,8 @@ namespace Falcor
 
                         // If this is an opaque mesh, set the opaque flag
                         auto pMaterial = mpMaterials->getMaterial(MaterialID::fromSlang(mesh.materialID));
-                        desc.flags = pMaterial->isOpaque() ? RtGeometryFlags::Opaque : RtGeometryFlags::None;
+                        //desc.flags = pMaterial->isOpaque() ? RtGeometryFlags::Opaque : RtGeometryFlags::None;
+                        desc.flags = RtGeometryFlags::None;
 
                         // Set the position data
                         desc.content.triangles.vertexData = pVb->getGpuAddress() + (mesh.vbOffset * pVbLayout->getStride());
@@ -2924,7 +2925,7 @@ namespace Falcor
                     {
                         // Displaced triangle mesh, requires custom intersection.
                         desc.type = RtGeometryType::ProcedurePrimitives;
-                        desc.flags = RtGeometryFlags::Opaque;
+                        desc.flags = RtGeometryFlags::None;
 
                         desc.content.proceduralAABBs.count = mDisplacement.meshData[meshID.get()].AABBCount;
                         uint64_t bbStartOffset = mDisplacement.meshData[meshID.get()].AABBOffset * sizeof(RtAABB);
@@ -2987,7 +2988,7 @@ namespace Falcor
                 RtGeometryDesc& desc = blas.geomDescs[geomIndexOffset++];
 
                 desc.type = RtGeometryType::ProcedurePrimitives;
-                desc.flags = RtGeometryFlags::Opaque;
+                desc.flags = RtGeometryFlags::None;
                 desc.content.proceduralAABBs.count = curve.indexCount;
                 desc.content.proceduralAABBs.data = mpRtAABBBuffer->getGpuAddress() + bbAddressOffset;
                 desc.content.proceduralAABBs.stride = sizeof(RtAABB);
@@ -3010,7 +3011,7 @@ namespace Falcor
 
                 RtGeometryDesc& desc = blas.geomDescs.back();
                 desc.type = RtGeometryType::ProcedurePrimitives;
-                desc.flags = RtGeometryFlags::Opaque;
+                desc.flags = RtGeometryFlags::None;
                 desc.content.proceduralAABBs.count = pSDFGrid->getAABBCount();
                 desc.content.proceduralAABBs.data = pSDFGrid->getAABBBuffer()->getGpuAddress();
                 desc.content.proceduralAABBs.stride = sizeof(RtAABB);
@@ -3030,7 +3031,7 @@ namespace Falcor
 
                     RtGeometryDesc& desc = blas.geomDescs.back();
                     desc.type = RtGeometryType::ProcedurePrimitives;
-                    desc.flags = RtGeometryFlags::Opaque;
+                    desc.flags = RtGeometryFlags::None;
                     desc.content.proceduralAABBs.count = pSDFGrid->getAABBCount();
                     desc.content.proceduralAABBs.data = pSDFGrid->getAABBBuffer()->getGpuAddress();
                     desc.content.proceduralAABBs.stride = sizeof(RtAABB);
