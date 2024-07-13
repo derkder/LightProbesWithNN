@@ -102,17 +102,19 @@ private:
     float mIntervalY;
     //uint probeNumsX = 1920;
     //uint probeNumsY = 1080;
-    uint probeNumsX = 1000;
-    uint probeNumsY = 1000;
-    uint sampleNumsX = 500;
-    uint sampleNumsY = 500;
+    uint probeNumsX = 1920;
+    uint probeNumsY = 1080;
+    uint sampleNumsX = 1920;
+    uint sampleNumsY = 1080;
+    uint mSeed = 2;
     float minZ;
     float maxZ;
     float sliceZPercent = 0.65f;
     bool mIsCutting = true;
     bool isPerspective = false;
     float3 mProbeLoc;
-    std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/temp/info.json";
+    // std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/temp/info.json";
+    std::string json_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/info.json";
     std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
 
     // Ray tracing program.

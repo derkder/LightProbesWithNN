@@ -32,6 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <ctime>
 
 extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registry)
 {
@@ -231,6 +232,7 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     var["CB"]["gIntervalY"] = mIntervalY;
     var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * sliceZPercent; // posZ of light probe
     var["CB"]["gIsCutting"] = mIsCutting;
+    var["CB"]["seed"] = mSeed;
     var["CB"]["kProbeLoc"] = mProbeLoc;
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.
@@ -384,34 +386,27 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
         defines.add(mpSampleGenerator->getDefines());
         defines.add(mpScene->getSceneDefines());
         mpResolvePass = ComputePass::create(mpDevice, resolveDesc, defines);
-         
-        //CollectData
-        mSceneAABBCenter = mpScene->getSceneBounds().center();
-        mSceneAABBExtent = mpScene->getSceneBounds().extent();
-        //mSceneAABBExtent.x *= 1.5f;
-        //mSceneAABBExtent.y *= 1.5f;
-        mIntervalX = mSceneAABBExtent.x / probeNumsX;
-        mIntervalY = mSceneAABBExtent.y / probeNumsY;
 
-        minZ = mSceneAABBCenter.z - mSceneAABBExtent.z / 2;
-        maxZ = mSceneAABBCenter.z + mSceneAABBExtent.z / 2;
+         std::ifstream file(json_path);
+         if (!file.is_open())
+         {
+             std::cout << "Failed to open JSON file" << std::endl;
+         }
+         nlohmann::json data;
+         file >> data;
+         if (data.empty())
+         {
+             std::cout << "JSON file is empty" << std::endl;
+         }
 
-        std::ifstream file(json_path);
-        if (!file.is_open())
-        {
-            std::cout << "Failed to open JSON file" << std::endl;
-        }
-        nlohmann::json data;
-        file >> data;
-        if (data.empty())
-        {
-            std::cout << "JSON file is empty" << std::endl;
-        }
-
-        // 获取最后一个元素
-        auto latest = data.back();
-        mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
-        std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
+         // 获取最后一个元素
+         auto latest = data.back();
+         mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
+         mSeed = latest["curSeed"];
+         std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
+        //mProbeLoc = float3(0.018, 0.488, -0.181);
+        //mSeed = 0;
+        //mSeed = static_cast<unsigned int>(std::time(0));
     }
 }
 

@@ -68,6 +68,7 @@ cbuffer CB
 {
     uint gFrameCount;    // Frame count since scene was loaded.
     uint gPRNGDimension; // First available PRNG dimension.
+    uint seed;
 
     float3 gSceneAABBCenter;
     float3 gSceneAABBExtent;
@@ -106,6 +107,12 @@ static const float kRayTMax = FLT_MAX;
 //反过来不行是因为有球挡住了
 static const bool kIsInverted = false;
 static const int currentState = From_Left;
+
+// 线性同余生成器参数
+static const int A = 1664525;
+static const int C = 1013904223;
+static const int M = 2147483647; // 使用较大的质数作为模数
+
 
 /**
  * Payload for shadow ray.
@@ -399,6 +406,8 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
 
 float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDim)
 {
+    //return float3(1.0f);
+
     float3 outColor = float3(0.f);
 
     float3 primaryRayOrigin = gScene.camera.getPosition();
@@ -452,6 +461,8 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
+    //return float3(1.0f);
+
     float radius = 0.007f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y;
@@ -719,47 +730,29 @@ void scatterSdfGridClosestHit(inout ScatterRayData rayData, SDFGridHitData sdfGr
 // Shader entry point for ray generation shader.
 //
 
+bool shouldReturnTrue(int x, int y, int seed, uint2 frameD) {
+    int totalCalls = frameD.x * frameD.y;
+    int maxTrueCount = 10000;
+    int h = x * 374761393 + y * 668265263 + seed * 1013904223; // Arbitrary constants
+    h = (h ^ (h >> 13)) * 1274126177;
+    h =  h ^ (h >> 16);
+    int randomValue = abs(h) % totalCalls;
+
+    // If random value is less than maxTrueCount, return true
+    return randomValue < maxTrueCount;
+}
+
+
 [shader("raygeneration")]
 void rayGen()
 {
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
-    uint halfX = frameDim.x / 2;
-    uint halfY = frameDim.y / 2;
-    // gOutputColor[pixel] = float4(float3(pixel.x / 1920.f), 1.f);//这里1920改成frameDim.x居然会全黑？
-
-    //float3 color = tracePath(pixel, frameDim);
-    float3 probePos;
-    probePos.z = gCurZ;
-
-    uint xOffset = (pixel.x <= halfX) ? (pixel.x - halfX) : (halfX - pixel.x);
-    int xSign = (pixel.x <= halfX) ? 1 : -1;
-    uint yOffset = (pixel.y <= halfY) ? (halfY - pixel.y) : (pixel.y - halfY);
-    int ySign = (pixel.y <= halfY) ? 1 : -1;
-
-    probePos.x = gSceneAABBCenter.x + xSign * xOffset * gIntervalX;
-    probePos.y = gSceneAABBCenter.y + ySign * yOffset * gIntervalY;
-
-    // // cause pixel is unsigned int and is hard to change type
-    // if (pixel.x <= 960 && pixel.y <= 540) {
-    //     probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
-    //     probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
-    // }
-    // else if (pixel.x > 960 && pixel.y <= 540) {
-    //     probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
-    //     probePos.y = gSceneAABBCenter.y + (540 - pixel.y) * gIntervalY;
-    // }
-    // else if (pixel.x > 960 && pixel.y > 540) {
-    //     probePos.x = gSceneAABBCenter.x - (pixel.x - 960) * gIntervalX;
-    //     probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
-    // }
-    // else {
-    //     probePos.x = gSceneAABBCenter.x + (960 - pixel.x) * gIntervalX;
-    //     probePos.y = gSceneAABBCenter.y - (pixel.y - 540) * gIntervalY;
-    // }
-
+    //uint2 temp = uint2(1920, 1080);
+    //pixel = random_xy(pixel, seed, temp);
+    
+    if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
 
     float3 color = MyTracePathMap(pixel, frameDim);
-
     gOutputColor[pixel] = float4(color, 1.f);
 }
