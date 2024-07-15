@@ -58,9 +58,9 @@ def should_return_true(x, y, seed):
 
     return random_value < max_true_count
 
-# 函数：从文件夹中读取数据
+# 函数：从文件夹中读取数据x
 def read_data_from_folders(input_path, json_path, start_idx, exclude_indices):
-    print(start_idx)
+    print(f"startidx{start_idx}")
     data = []
     
     for i in range(start_idx, start_idx + total_process_num):
@@ -76,6 +76,7 @@ def read_data_from_folders(input_path, json_path, start_idx, exclude_indices):
         if os.path.exists(image_path):
             # 读取EXR图片    
             size, rgb_values = read_exr(image_path)
+            # print(f"size{size}") # 1920 1080
             seed, probeLoc = read_cur_seed_loc(json_path, i)
             if seed is None:
                 print("idx error")
@@ -161,14 +162,17 @@ def save_data_to_folders(data, output_path, batch_dim=(100, 100)):
         print(f"Write Processed {batch_idx}/{num_batches}")
 
 # 示例调用
-json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/info.json"
-input_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/"  # 输入文件夹路径
-output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
+# json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/info.json"
+# input_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/"  # 输入文件夹路径
+# output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
+json_path =  "D:/Projects/LightProbesWithNN/dumped_data/temptemp/raw/info.json"
+input_path = "D:/Projects/LightProbesWithNN/dumped_data/temptemp/raw/"  # 输入文件夹路径
+output_path = "D:/Projects/LightProbesWithNN/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
 frame_dim = (1920, 1080)
 radius = 0.005
-total_process_num = 50
-start_idx = 48  # 从这个索引开始处理
-exclude_indices = [49, 56, 63, 71, 82, 97, 102, 105, 113]  # 要排除的索引数组
+total_process_num = 80
+start_idx = 0  # 从这个索引开始处理
+exclude_indices = [3, 8, 13, 16, 23, 40, 49, 56, 63, 71, 82, 97, 102, 105, 113]  # 要排除的索引数组
 
 # 读取数据
 data = read_data_from_folders(input_path, json_path, start_idx, exclude_indices)
