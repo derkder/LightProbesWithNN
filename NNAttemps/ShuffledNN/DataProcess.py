@@ -162,12 +162,12 @@ def save_data_to_folders(data, output_path, batch_dim=(100, 100)):
         print(f"Write Processed {batch_idx}/{num_batches}")
 
 # 示例调用
-# json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/info.json"
-# input_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/"  # 输入文件夹路径
-# output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
-json_path =  "D:/Projects/LightProbesWithNN/dumped_data/temptemp/raw/info.json"
-input_path = "D:/Projects/LightProbesWithNN/dumped_data/temptemp/raw/"  # 输入文件夹路径
-output_path = "D:/Projects/LightProbesWithNN/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
+json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/info.json"
+input_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/raw/"  # 输入文件夹路径
+output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
+# json_path =  "D:/Projects/LightProbesWithNN/dumped_data/temptemp/raw/info.json"
+# input_path = "D:/Projects/LightProbesWithNN/dumped_data/temptemp/raw/"  # 输入文件夹路径
+# output_path = "D:/Projects/LightProbesWithNN/dumped_data/temptemp/processed_real/"  # 输出文件夹路径
 frame_dim = (1920, 1080)
 radius = 0.005
 total_process_num = 80

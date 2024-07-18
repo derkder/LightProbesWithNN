@@ -46,11 +46,15 @@ const char kResolveFile[] = "RenderPasses/ReflectMapGen/ResolvePass.cs.slang";
 
 // Ray tracing settings that affect the traversal stack size.
 // These should be set as small as possible.
-const uint32_t kMaxPayloadSizeBytes = 72u;
+//const uint32_t kMaxPayloadSizeBytes = 72u;
+const uint32_t kMaxPayloadSizeBytes = 160u;
 const uint32_t kMaxRecursionDepth = 2u;
 
 const char kInputViewDir[] = "viewW";
 const char kOutputColor[] = "color";
+const char kOutputDiffuse[] = "diffuse";
+const char kOutputSpecular[] = "specular";
+const char kOutputRoughEmmi[] = "roughnessemmisive";
 
 const ChannelList kInputChannels = {
     // clang-format off
@@ -61,7 +65,10 @@ const ChannelList kInputChannels = {
 
 const ChannelList kOutputChannels = {
     // clang-format off
-    { kOutputColor,          "gOutputColor", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputColor,          "gOutputColor",      "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputDiffuse,        "gOutputDiffuse",    "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputSpecular,      "gOutputSpecular",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputRoughEmmi,      "gOutputRoughEmmi",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     // clang-format on
 };
 
@@ -404,9 +411,10 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
          mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
          mSeed = latest["curSeed"];
          std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
-        //mProbeLoc = float3(0.018, 0.488, -0.181);
-        //mSeed = 0;
+         //mProbeLoc = float3(-0.056081911802012024, 0.1454754890310627, 0.24149841116601556);
+         //mSeed = 1406584362;
         //mSeed = static_cast<unsigned int>(std::time(0));
+        //-0.056081911802012024, "new_y" : 0.1454754890310627, "new_z" : 0.24149841116601556
     }
 }
 

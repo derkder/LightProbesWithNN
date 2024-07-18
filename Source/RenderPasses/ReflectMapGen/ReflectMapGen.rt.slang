@@ -87,6 +87,9 @@ Texture2D<float4> gViewW; // Optional
 
 // Outputs
 RWTexture2D<float4> gOutputColor;
+RWTexture2D<float4> gOutputDiffuse;
+RWTexture2D<float4> gOutputSpecular;
+RWTexture2D<float4> gOutputRoughEmmi;
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -127,11 +130,16 @@ struct ShadowRayData
  */
 struct ScatterRayData
 {
+    float3 diffuse;
+    float isEmissive;
+    float3 specular;
+    float roughness;
     float3 radiance;  ///< Accumulated outgoing radiance from path.
     bool terminated;  ///< Set to true when path is terminated.
     float3 thp;       ///< Current path throughput. This is updated at each path vertex.
     uint pathLength;  ///< Path length in number of path segments (0 at origin, 1 at first secondary hit, etc.). Max 2^31.
     float3 origin;    ///< Next path segment origin.
+    //float reverseEmmisiveFact;
     float3 direction; ///< Next path segment direction.
     HitInfo hitInfo;
 
@@ -142,6 +150,10 @@ struct ScatterRayData
      */
     __init(SampleGenerator sg)
     {
+        this.diffuse = float3(0, 0, 0);
+        this.isEmissive = false;
+        this.specular = float3(0, 0, 0);
+        this.roughness = 0;
         this.terminated = false;
         this.pathLength = 0;
         this.radiance = float3(0, 0, 0);
@@ -360,6 +372,22 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     // Create material instance.
     let mi = gScene.materials.getMaterialInstance(sd, lod);
 
+    if(1 == rayData.pathLength)
+    {
+        rayData.diffuse = mi.getProperties(sd).diffuseReflectionAlbedo;
+        rayData.specular = mi.getProperties(sd).specularReflectionAlbedo;
+        rayData.roughness = mi.getProperties(sd).roughness;
+        if(length(mi.getProperties(sd).emission) > 0.01)
+        {
+            rayData.isEmissive = 1.0;
+            //rayData.reverseEmmisiveFact = 1 / mi.getProperties(sd).emission;
+        }
+        else
+        {
+            rayData.isEmissive = 0.0;
+        }
+    }
+
     // Add emitted light.
     if (kUseEmissiveLights && (kComputeDirect || rayData.pathLength > 0))
     {
@@ -484,7 +512,14 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
         // if (1 == depth) return rayData.radiance;
         traceScatterRay(rayData);
         if (0 == depth) radiance0 = rayData.radiance;
-        if (1 == depth) radiance1 = rayData.radiance - radiance0;
+        if (1 == depth)
+        {
+            radiance1 = rayData.radiance - radiance0;   
+            gOutputDiffuse[pixel].xyz = rayData.diffuse;
+            gOutputSpecular[pixel].xyz = rayData.specular;
+            gOutputRoughEmmi[pixel].x = rayData.roughness;
+            gOutputRoughEmmi[pixel].y = rayData.isEmissive;
+        } 
     }
 
     // Store contribution from scatter ray.
@@ -732,7 +767,7 @@ void scatterSdfGridClosestHit(inout ScatterRayData rayData, SDFGridHitData sdfGr
 
 bool shouldReturnTrue(int x, int y, int seed, uint2 frameD) {
     int totalCalls = frameD.x * frameD.y;
-    int maxTrueCount = 10000;
+    int maxTrueCount = 250000;
     int h = x * 374761393 + y * 668265263 + seed * 1013904223; // Arbitrary constants
     h = (h ^ (h >> 13)) * 1274126177;
     h =  h ^ (h >> 16);
@@ -748,8 +783,6 @@ void rayGen()
 {
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
-    //uint2 temp = uint2(1920, 1080);
-    //pixel = random_xy(pixel, seed, temp);
     
     if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
 

@@ -15,6 +15,9 @@ def render_graph_ReflectMapGen():
     g.addEdge("VBufferRT.viewW", "ReflectMapGen.viewW")
     g.addEdge("ReflectMapGen.color", "AccumulatePass.input")
     g.markOutput("AccumulatePass.output")
+    g.markOutput("ReflectMapGen.diffuse")
+    g.markOutput("ReflectMapGen.specular")
+    g.markOutput("ReflectMapGen.roughnessemmisive")
     return g
 
 def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range, idx):
@@ -62,19 +65,19 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
     print("Sphere position updated successfully")
 
 scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
-output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp"
-json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/info.json"
+output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw"
+json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw/info.json"
 pos_line_idx = 47  # Adjusted to the correct line index
-n_collect_frames = 70000000
-n_match_frames = 50000
+n_collect_frames = 100000000
+n_match_frames = 4000
 # n_match_frames = 1000
-n_sample_count = 0
+n_sample_count = 497
 
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
 except NameError: pass
 
-modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), 0)
+modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
 m.loadScene(scene_path)
 
 for i in range(n_collect_frames):
@@ -92,3 +95,19 @@ for i in range(n_collect_frames):
         modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
         m.unloadScene()
         m.loadScene(scene_path)
+
+
+
+
+
+# m.loadScene(scene_path)
+
+# n_collect_frames = 3000
+# for i in range(n_collect_frames):
+#     renderFrame()
+#     if i < 2998:
+#         continue
+#     outputDir = "C:/Files/CGProject/temp1/frame_{:04d}".format(i)
+#     os.makedirs(outputDir, exist_ok=True)
+#     m.frameCapture.outputDir = outputDir
+#     m.frameCapture.capture()
