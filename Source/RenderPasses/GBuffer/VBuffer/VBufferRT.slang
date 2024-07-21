@@ -25,6 +25,8 @@
  # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
+#include "Utils/Math/MathConstants.slangh"
+
 __exported import Scene.Shading;
 __exported import Utils.Timing.GpuTimer;
 __exported import Utils.Math.Ray;
@@ -37,6 +39,7 @@ RWTexture2D<float2> gMotionVector;
 RWTexture2D<float4> gViewW;
 RWTexture2D<uint> gTime;
 RWTexture2D<float> gMask;
+
 
 #define is_valid(name) (is_valid_##name != 0)
 
@@ -53,17 +56,36 @@ struct VBufferRT
     uint2 frameDim;
     uint frameCount;
 
+    float3 kProbeLoc;
+    uint kSeed;
+
     Ray generateRay(uint2 pixel)
     {
+        Ray ray;
         if (kComputeDepthOfField)
         {
             SampleGenerator sg = SampleGenerator(pixel, frameCount);
-            return gScene.camera.computeRayThinlens(pixel, frameDim, sampleNext2D(sg));
+            ray = gScene.camera.computeRayThinlens(pixel, frameDim, sampleNext2D(sg));
         }
         else
         {
-            return gScene.camera.computeRayPinhole(pixel, frameDim);
+            ray = gScene.camera.computeRayPinhole(pixel, frameDim);
         }
+
+        float3 temp = float3(0, 0.28, 0);
+        float radius = 0.007f; // 0.005(sphere radius) + 0.002(bias)
+        float theta = M_PI * pixel.y / 1080;
+        float phi = 2 * M_PI * pixel.x / 1920;
+        float x = radius * sin(theta) * cos(phi);
+        float z = radius * sin(theta) * sin(phi);
+        float y = radius * cos(theta);
+        float3 primaryRayOrigin = float3(x, y, z) + temp;
+        const float3 primaryRayDir = - normalize(float3(x, y, z));
+        ray.origin = primaryRayOrigin;
+        ray.dir = primaryRayDir;
+        ray.tMin = 0.0f;
+
+        return ray;
     }
 
     void writeHit(uint2 pixel, float3 rayOrigin, float3 rayDir, const HitInfo hit)

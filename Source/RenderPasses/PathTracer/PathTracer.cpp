@@ -29,6 +29,8 @@
 #include "RenderGraph/RenderPassHelpers.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
 #include "Rendering/Lights/EmissiveUniformSampler.h"
+#include "nlohmann/json.hpp"
+#include <fstream>
 
 namespace
 {
@@ -435,6 +437,27 @@ void PathTracer::setScene(RenderContext* pRenderContext, const ref<Scene>& pScen
 
         validateOptions();
     }
+
+    std::ifstream file(json_path);
+    if (!file.is_open())
+    {
+        std::cout << "Failed to open JSON file" << std::endl;
+    }
+    nlohmann::json data;
+    file >> data;
+    if (data.empty())
+    {
+        std::cout << "JSON file is empty" << std::endl;
+    }
+
+    // 获取最后一个元素
+    auto latest = data.back();
+    //mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
+    //mSeed = latest["curSeed"];
+    mParams.kProbeLoc = float3(0.2609, 0.4818, 0.0831);
+    std::cout << "mProbeLoc: " << mParams.kProbeLoc.x << "  " << mParams.kProbeLoc.y << "  " << mParams.kProbeLoc.z << std::endl;
+    mParams.kSeed = 0;
+    //mSeed = static_cast<unsigned int>(std::time(0));
 }
 
 void PathTracer::execute(RenderContext* pRenderContext, const RenderData& renderData)
@@ -1108,6 +1131,8 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
     }
 
     var["params"].setBlob(mParams);
+    //var["kProbeLoc"] = mProbeLoc;
+    //var["kSeed"] = mSeed;
     var["vbuffer"] = renderData.getTexture(kInputVBuffer);
     var["viewDir"] = pViewDir; // Can be nullptr
     var["sampleCount"] = pSampleCount; // Can be nullptr

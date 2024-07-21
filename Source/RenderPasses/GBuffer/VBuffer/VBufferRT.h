@@ -82,4 +82,9 @@ private:
     } mRaytrace;
 
     ref<ComputePass> mpComputePass;
+
+    uint mSeed;
+    float3 mProbeLoc;
+    //std::string json_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/info.json";
+    std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/tempFullData718/raw/info.json";
 };

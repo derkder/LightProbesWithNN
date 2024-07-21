@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "Scene/SceneDefines.slangh"
+#include "Utils/Math/MathConstants.slangh"
 
 import Scene.Raytracing;
 import Scene.RaytracingInline; // For visibility queries.
@@ -529,7 +530,7 @@ void scatterTriangleAnyHit(inout PathPayload payload : SV_RayPayload, BuiltInTri
     GeometryInstanceID instanceID = getGeometryInstanceID();
     VertexData v = getVertexData(instanceID, PrimitiveIndex(), attribs);
     const uint materialID = gScene.getMaterialID(instanceID);
-    if (gScene.materials.alphaTest(v, materialID, 0.f)) IgnoreHit();
+    //if (gScene.materials.alphaTest(v, materialID, 0.f)) IgnoreHit();
 #endif
 }
 

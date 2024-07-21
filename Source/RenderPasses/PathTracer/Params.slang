@@ -92,6 +92,9 @@ struct PathTracerParams
     uint    seed = 0;                   ///< Random seed. This will get updated from the host depending on settings.
     uint2   _pad0;
 
+    float3  kProbeLoc;
+    uint    kSeed;
+
 #ifndef HOST_CODE
     /** Computes the offset into the tiled sample buffer for a given tile.
         The samples for all pixels are stored consecutively after this offset.

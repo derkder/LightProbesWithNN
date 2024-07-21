@@ -25,6 +25,8 @@
  # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
+#include "Utils/Math/MathConstants.slangh"
+
 import Rendering.Lights.EnvMapSampler;
 import Rendering.Lights.EmissiveLightSampler;
 import Rendering.Lights.EmissiveLightSamplerHelpers;
@@ -40,6 +42,7 @@ import RenderPasses.Shared.Denoising.NRDData;
 import RenderPasses.Shared.Denoising.NRDHelpers;
 import Utils.Color.ColorHelpers;
 import Utils.Geometry.GeometryHelpers;
+import Utils.Math.MathHelpers;
 import Utils.Debug.PixelDebug;
 import LoadShadingData;
 import ColorType;
@@ -278,12 +281,24 @@ struct PathTracer
         path.thp = float3(1.f);
 
         const uint2 pixel = path.getPixel();
+        float3 temp = float3(0, 0.28, 0);
 
-        // Create primary ray.
-        Ray cameraRay = gScene.camera.computeRayPinhole(pixel, params.frameDim);
-        if (kUseViewDir) cameraRay.dir = -viewDir[pixel];
-        path.origin = cameraRay.origin;
-        path.dir = cameraRay.dir;
+        // // Create primary ray.
+        // Ray cameraRay = gScene.camera.computeRayPinhole(pixel, params.frameDim);
+        // if (kUseViewDir) cameraRay.dir = -viewDir[pixel];
+        // path.origin = cameraRay.origin;
+        // path.dir = cameraRay.dir;
+        float radius = 0.007f; // 0.005(sphere radius) + 0.002(bias)
+        float3 outColor = float3(0.f);
+        float theta = M_PI * pixel.y / 1080;
+        float phi = 2 * M_PI * pixel.x / 1920;
+        float x = radius * sin(theta) * cos(phi);
+        float z = radius * sin(theta) * sin(phi);
+        float y = radius * cos(theta);
+        float3 primaryRayOrigin = float3(x, y, z) + temp;
+        const float3 primaryRayDir = - normalize(float3(x, y, z));
+        path.origin = primaryRayOrigin;
+        path.dir = primaryRayDir;
 
         // Create sample generator.
         const uint maxSpp = kSamplesPerPixel > 0 ? kSamplesPerPixel : kMaxSamplesPerPixel;

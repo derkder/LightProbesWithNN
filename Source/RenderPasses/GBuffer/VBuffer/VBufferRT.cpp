@@ -29,6 +29,8 @@
 #include "Scene/HitInfo.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
 #include "RenderGraph/RenderPassHelpers.h"
+#include "nlohmann/json.hpp"
+#include <fstream>
 
 namespace
 {
@@ -159,6 +161,27 @@ Properties VBufferRT::getProperties() const
 void VBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
 {
     GBufferBase::setScene(pRenderContext, pScene);
+
+    std::ifstream file(json_path);
+    if (!file.is_open())
+    {
+        std::cout << "Failed to open JSON file" << std::endl;
+    }
+    nlohmann::json data;
+    file >> data;
+    if (data.empty())
+    {
+        std::cout << "JSON file is empty" << std::endl;
+    }
+
+    // 获取最后一个元素
+    auto latest = data.back();
+    //mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
+    mProbeLoc = float3(0.2609, 0.4818, 0.0831);
+    //mSeed = latest["curSeed"];
+    std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
+    //mSeed = 0;
+    //mSeed = static_cast<unsigned int>(std::time(0));
 
     recreatePrograms();
 }
@@ -305,6 +328,8 @@ void VBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderDat
 {
     var["gVBufferRT"]["frameDim"] = mFrameDim;
     var["gVBufferRT"]["frameCount"] = mFrameCount;
+    var["gVBufferRT"]["kProbeLoc"] = mProbeLoc;
+    var["gVBufferRT"]["kSeed"] = mSeed;
 
     // Bind resources.
     var["gVBuffer"] = getOutput(renderData, kVBufferName);

@@ -193,4 +193,9 @@ private:
     ref<Buffer>                     mpSampleNRDPrimaryHitNeeOnDelta;///< Compact per-sample NEE on delta primary vertices data.
     ref<Buffer>                     mpSampleNRDEmission;        ///< Compact per-sample NRD emission data.
     ref<Buffer>                     mpSampleNRDReflectance;     ///< Compact per-sample NRD reflectance data.
+
+    //uint mSeed;
+    //float3                          mProbeLoc;
+    //std::string json_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/info.json";
+    std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/tempFullData718/raw/info.json";
 };
