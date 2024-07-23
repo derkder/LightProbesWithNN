@@ -394,23 +394,23 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
         defines.add(mpScene->getSceneDefines());
         mpResolvePass = ComputePass::create(mpDevice, resolveDesc, defines);
 
-         std::ifstream file(json_path);
-         if (!file.is_open())
-         {
-             std::cout << "Failed to open JSON file" << std::endl;
-         }
-         nlohmann::json data;
-         file >> data;
-         if (data.empty())
-         {
-             std::cout << "JSON file is empty" << std::endl;
-         }
+         //std::ifstream file(json_path);
+         //if (!file.is_open())
+         //{
+         //    std::cout << "Failed to open JSON file" << std::endl;
+         //}
+         //nlohmann::json data;
+         //file >> data;
+         //if (data.empty())
+         //{
+         //    std::cout << "JSON file is empty" << std::endl;
+         //}
 
-         // 获取最后一个元素
-         auto latest = data.back();
-         mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
-         mSeed = latest["curSeed"];
-         std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
+         //// 获取最后一个元素
+         //auto latest = data.back();
+         //mProbeLoc = float3(latest["new_x"], latest["new_y"], latest["new_z"]);
+         //mSeed = latest["curSeed"];
+         //std::cout << "mProbeLoc: " << mProbeLoc.x << "  " << mProbeLoc.y << "  " << mProbeLoc.z << std::endl;
          //mProbeLoc = float3(-0.056081911802012024, 0.1454754890310627, 0.24149841116601556);
          //mSeed = 1406584362;
         //mSeed = static_cast<unsigned int>(std::time(0));

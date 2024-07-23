@@ -45,7 +45,7 @@ sphereMesh = TriangleMesh.createSphere()
 
 # Create mesh instances
 sceneBuilder.addMeshInstance(
-    sceneBuilder.addNode('My Sphere', Transform(scaling=float3(0.005, 0.005, 0.005), translation=float3(0.018, 0.488, -0.181), rotationEulerDeg=float3(0, -45, 0))),
+    sceneBuilder.addNode('My Sphere', Transform(scaling=float3(0.005, 0.005, 0.005), translation=float3(0.102, 0.410, 0.023), rotationEulerDeg=float3(0, -45, 0))),
     sceneBuilder.addTriangleMesh(sphereMesh, mySphere)
 )
 

@@ -431,6 +431,72 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
+void myHandleHit(ShadingData sd, inout ScatterRayData rayData)
+{
+    let lod = ExplicitLodTextureSampler(0.f);
+    bool isCurveHit = false;
+
+    // Create material instance.
+    let mi = gScene.materials.getMaterialInstance(sd, lod);
+
+    if(1 == rayData.pathLength)
+    {
+        rayData.diffuse = mi.getProperties(sd).diffuseReflectionAlbedo;
+        rayData.specular = mi.getProperties(sd).specularReflectionAlbedo;
+        rayData.roughness = mi.getProperties(sd).roughness;
+        if(length(mi.getProperties(sd).emission) > 0.01)
+        {
+            rayData.isEmissive = 1.0;
+            //rayData.reverseEmmisiveFact = 1 / mi.getProperties(sd).emission;
+        }
+        else
+        {
+            rayData.isEmissive = 0.0;
+        }
+    }
+
+    // Add emitted light.
+    if (kUseEmissiveLights && (kComputeDirect || rayData.pathLength > 0))
+    {
+        rayData.radiance += rayData.thp * mi.getProperties(sd).emission;
+    }
+
+    // Check whether to terminate based on max depth.
+    if (rayData.pathLength >= kMaxBounces)
+    {
+        rayData.terminated = true;
+        return;
+    }
+
+    // Compute ray origin for new rays spawned from the hit.
+    float3 rayOrigin;
+    if (isCurveHit)
+    {
+        // For curves, we set the new origin at the sphere center.
+        rayOrigin = sd.posW - sd.curveRadius * sd.frame.N;
+    }
+    else
+    {
+        rayOrigin = sd.computeRayOrigin();
+    }
+
+    // Add contribution of direct light from analytic lights.
+    if (kUseAnalyticLights)
+    {
+        float3 Lr = evalDirectAnalytic(sd, mi, rayData.sg);
+        rayData.radiance += rayData.thp * Lr;
+    }
+
+    // Generate scatter ray for the next path segment.
+    // The raygen shader will continue the path based on the returned payload.
+    if (!generateScatterRay(sd, mi, isCurveHit, rayOrigin, rayData))
+    {
+        rayData.terminated = true;
+        return;
+    }
+
+    rayData.pathLength++;
+}
 
 float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDim)
 {
@@ -490,16 +556,16 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
     //return float3(1.0f);
-
-    float radius = 0.007f; // 0.005(sphere radius) + 0.002(bias)
+    float3 mProbeLoc = float3(0.26089, 0.48183, 0.08310);
+    float radius = 0.005f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y;
     float phi = 2 * M_PI * pixel.x / frameDim.x;
     float x = radius * sin(theta) * cos(phi);
     float z = radius * sin(theta) * sin(phi);
     float y = radius * cos(theta);
-    float3 primaryRayOrigin = float3(x, y, z) + kProbeLoc;
-    const float3 primaryRayDir = -normalize(float3(x, y, z));
+    float3 primaryRayOrigin = float3(x, y, z) + mProbeLoc;
+    const float3 primaryRayDir = - normalize(float3(x, y, z));
 
     SampleGenerator sg = SampleGenerator(pixel, gFrameCount); //random number generator
     ScatterRayData rayData = ScatterRayData(sg);
@@ -510,19 +576,61 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
     for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
         // if (1 == depth) return rayData.radiance;
-        traceScatterRay(rayData);
-        if (0 == depth) radiance0 = rayData.radiance;
-        if (1 == depth)
+        if (0 == depth)
         {
-            radiance1 = rayData.radiance - radiance0;   
-            gOutputDiffuse[pixel].xyz = rayData.diffuse;
-            gOutputSpecular[pixel].xyz = rayData.specular;
-            gOutputRoughEmmi[pixel].x = rayData.roughness;
-            gOutputRoughEmmi[pixel].y = rayData.isEmissive;
-        } 
+            VertexData v = {};
+            v.posW = rayData.origin;
+            v.normalW = -primaryRayDir;
+            v.faceNormalW = v.normalW;
+            v.texC = float2(0.1, 0.1);
+            //v.tangent
+            float3 arbitraryVector = (abs(v.normalW.y) < 0.999f) ? float3(0, 1, 0) : float3(1, 0, 0);
+            float3 tangent = normalize(cross(arbitraryVector, v.normalW));
+            float3 bitangent = cross(v.normalW, tangent);
+            float handedness = (dot(cross(v.normalW, tangent), bitangent) < 0.0f) ? -1.0f : 1.0f;
+            v.tangentW = float4(tangent, handedness);
+            v.curveRadius = 0;
+            v.coneTexLODValue = 0;
+            let lod = ExplicitLodTextureSampler(0.f);
+            uint matID = 0;
+            ShadingData sdTemp = gScene.materials.prepareShadingData(v, matID/*materialID*/, -primaryRayDir, lod/*lod*/);
+            myHandleHit(sdTemp, rayData);
+        }
+        else
+        {
+            traceScatterRay(rayData);
+            if (1 == depth)
+            {
+                radiance1 = rayData.radiance - radiance0;   
+                gOutputDiffuse[pixel].xyz = rayData.diffuse;
+                gOutputSpecular[pixel].xyz = rayData.specular;
+                gOutputRoughEmmi[pixel].x = rayData.roughness;
+                gOutputRoughEmmi[pixel].y = rayData.isEmissive;
+            } 
+        }
+        
     }
 
-    // Store contribution from scatter ray.
+    // //这里加个逻辑，先用sample算一个output的dir和posibity，然后用out_dir算brdf
+    // // Store contribution from scatter ray.
+    // // Sample material.
+    // //原先在每次bounce都要调用的traceScatterRay里面
+    // BSDFSample bsdfSample;
+    // // float3 wiLocal = sf.toLocal(sd.V);
+    // // float3 woLocal = {};
+    // // StandardBSDF bsdf = StandardBSDF(wiLocal, sd.mtl, data);
+    // // bsdf.sample(wiLocal, woLocal, result.pdf, result.weight, result.lobeType, sg);
+    // // result.wo = sf.fromLocal(woLocal);
+    // VertexData v = {};
+    // v.posW =
+    // ShadingData sdTemp = gScene.materials.prepareShadingData(v, 0/*materialID*/, -primaryRayDir, 0);
+    
+    // if (mi.sample(sdTemp, rayData.sg, bsdfSample, kUseImportanceSampling))
+    // {
+    //     rayData.direction = bsdfSample.wo;
+    //     rayData.thp *= bsdfSample.weight;
+    // }
+
     outColor += rayData.radiance; // accumulate
     return outColor;
 }
@@ -656,8 +764,8 @@ void scatterTriangleMeshAnyHit(inout ScatterRayData rayData, BuiltInTriangleInte
     GeometryInstanceID instanceID = getGeometryInstanceID();
     VertexData v = getVertexData(instanceID, PrimitiveIndex(), attribs);
     const uint materialID = gScene.getMaterialID(instanceID);
-    if(0 ==  materialID && 0 != rayData.pathLength)
-        IgnoreHit();
+    // if(0 ==  materialID && 0 != rayData.pathLength)
+    //     IgnoreHit();
     if (gScene.materials.alphaTest(v, materialID, 0.f))
         IgnoreHit();
 }
@@ -669,6 +777,7 @@ void scatterTriangleMeshClosestHit(inout ScatterRayData rayData, BuiltInTriangle
     triangleHit.instanceID = getGeometryInstanceID();
     triangleHit.primitiveIndex = PrimitiveIndex();
     triangleHit.barycentrics = attribs.barycentrics;
+    //这里的triangleHit.barycentrics和primitiveIndex，就是为了得到一个vertexData
     handleHit(HitInfo(triangleHit), rayData);
 }
 
@@ -784,7 +893,7 @@ void rayGen()
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
     
-    if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
+    //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
 
     float3 color = MyTracePathMap(pixel, frameDim);
     gOutputColor[pixel] = float4(color, 1.f);

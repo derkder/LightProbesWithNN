@@ -64,34 +64,32 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
     
     print("sphere pos updated successfully")
 
-
-
-scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
-json_path = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
-pos_line_idx = 48 - 1 # file read idx start from 0 while vs_window start from 0 
-n_collect_frames = 16000000
-n_match_frames = 1500
-n_sample_count = 0
-
 PathTracer = render_graph_PathTracer()
 try: m.addGraph(PathTracer)
 except NameError: None
 
-modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
-m.loadScene(scene_path)
+# scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
+# json_path = "D:/Projects/LightProbesWithNN/dumped_data/info.json"
+# pos_line_idx = 48 - 1 # file read idx start from 0 while vs_window start from 0 
+# n_collect_frames = 16000000
+# n_match_frames = 1500
+# n_sample_count = 0
 
-for i in range(n_collect_frames):
-    i += 1 # 防止渲染的第一帧就要被保存下来
-    renderFrame()
-    if 0 == (i % n_match_frames):
-        # save output
-        outputDir = "D:/Projects/LightProbesWithNN/dumped_data/frame_{:04d}".format(n_sample_count)
-        os.makedirs(outputDir, exist_ok=True)
-        m.frameCapture.outputDir = outputDir
-        m.frameCapture.capture()
-        n_sample_count += 1
+# modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
+# m.loadScene(scene_path)
 
-        # move the probe and reload scene
-        modify_translation(scene_path, json_path, 47, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
-        m.unloadScene()
-        m.loadScene(scene_path)
+# for i in range(n_collect_frames):
+#     i += 1 # 防止渲染的第一帧就要被保存下来
+#     renderFrame()
+#     if 0 == (i % n_match_frames):
+#         # save output
+#         outputDir = "D:/Projects/LightProbesWithNN/dumped_data/frame_{:04d}".format(n_sample_count)
+#         os.makedirs(outputDir, exist_ok=True)
+#         m.frameCapture.outputDir = outputDir
+#         m.frameCapture.capture()
+#         n_sample_count += 1
+
+#         # move the probe and reload scene
+#         modify_translation(scene_path, json_path, 47, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272))
+#         m.unloadScene()
+#         m.loadScene(scene_path)
