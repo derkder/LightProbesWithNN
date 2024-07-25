@@ -26,15 +26,18 @@ def read_exr(file_path):
     return size, stacked_rgb
 
 class CustomDataset(Dataset):
-    def __init__(self, folder_path):
+    def __init__(self, folder_path, batch_size=1000000):  # 调整批次大小
+        self.folder_path = folder_path
+        self.batch_size = batch_size
+        self.current_batch = 0
+        self.load_batch()
+    
+    def load_batch(self):
         self.data = []
         self.colors = []
-        self.load_data(folder_path)
-    
-    def load_data(self, folder_path):
-        batch_folders = os.listdir(folder_path)
+        batch_folders = os.listdir(self.folder_path)[self.current_batch:self.current_batch+self.batch_size]
         for batch_folder in batch_folders:
-            batch_folder_path = os.path.join(folder_path, batch_folder)
+            batch_folder_path = os.path.join(self.folder_path, batch_folder)
             num_data_points = 0
             with open(os.path.join(batch_folder_path, "data.json"), 'r') as f:
                 json_data = json.load(f)
@@ -47,16 +50,18 @@ class CustomDataset(Dataset):
             _, color_image = read_exr(color_exr_path)
             flat_colors = color_image.reshape(-1, 3)
             self.colors.extend(flat_colors[:num_data_points])
-            # self.colors.extend(color_image.reshape(-1, 3))
-            # print(self.data[1], self.colors[1])
+        self.current_batch += self.batch_size
     
     def __len__(self):
         return len(self.data)
     
     def __getitem__(self, idx):
+        if idx >= len(self.data):
+            self.load_batch()
         hitpoint, raydir = self.data[idx]
         color = self.colors[idx]
         return torch.tensor(hitpoint, dtype=torch.float32), torch.tensor(raydir, dtype=torch.float32), torch.tensor(color, dtype=torch.float32)
+
 
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -165,8 +170,8 @@ def main():
     plt.legend()
     plt.show()
 
-final_model_path = "NNAttemps/ShuffledNN/models/final_light_probe_model_3.pth"
+final_model_path = "NNAttemps/ShuffledNN/models/final_light_probe_model_8.pth"
 # path to processed data
-output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/processed_real/"  
+output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/processed_real/"  
 if __name__ == '__main__':
     main()

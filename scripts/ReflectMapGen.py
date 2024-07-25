@@ -71,30 +71,30 @@ pos_line_idx = 47  # Adjusted to the correct line index
 n_collect_frames = 100000000
 n_match_frames = 4000
 # n_match_frames = 1000
-n_sample_count = 497
+n_sample_count = 2652
 
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
 except NameError: pass
 
-modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
+# modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
 m.loadScene(scene_path)
 
-for i in range(n_collect_frames):
-    i += 1
-    renderFrame()
+# for i in range(n_collect_frames):
+#     i += 1
+#     renderFrame()
 
-    if 0 == (i % n_match_frames):
-        file_name_format = "frame_{:04d}".format(n_sample_count)
-        outputDir = f"{output_path}/{file_name_format}"
-        os.makedirs(outputDir, exist_ok=True)
-        m.frameCapture.outputDir = outputDir
-        m.frameCapture.capture()
-        n_sample_count += 1
+#     if 0 == (i % n_match_frames):
+#         file_name_format = "frame_{:04d}".format(n_sample_count)
+#         outputDir = f"{output_path}/{file_name_format}"
+#         os.makedirs(outputDir, exist_ok=True)
+#         m.frameCapture.outputDir = outputDir
+#         m.frameCapture.capture()
+#         n_sample_count += 1
 
-        modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
-        m.unloadScene()
-        m.loadScene(scene_path)
+#         modify_translation(scene_path, json_path, pos_line_idx, (-0.272, 0.272), (0.02, 0.547), (-0.272, 0.272), n_sample_count)
+#         m.unloadScene()
+#         m.loadScene(scene_path)
 
 
 

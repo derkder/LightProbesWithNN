@@ -70,13 +70,13 @@ def read_data_from_folders(input_path, json_path, start_idx, exclude_indices):
         #     file_name_format = "frame_{:04d}/Mogwai.AccumulatePass.output.50000.exr".format(i)
         #     image_path = f"{input_path}/{file_name_format}"
         #     print(image_path)
-        file_name_format = "frame_{:04d}/Mogwai.AccumulatePass.output.50000.exr".format(i)
+        file_name_format = "frame_{:04d}/Mogwai.AccumulatePass.output.4000.exr".format(i)
         image_path = f"{input_path}/{file_name_format}"
-        file_name_format = "frame_{:04d}/Mogwai.ReflectMapGen.diffuse.50000.exr".format(i)
+        file_name_format = "frame_{:04d}/Mogwai.ReflectMapGen.diffuse.4000.exr".format(i)
         diffuse_path = f"{input_path}/{file_name_format}"
-        file_name_format = "frame_{:04d}/Mogwai.ReflectMapGen.roughnessemmisive.50000.exr".format(i)
+        file_name_format = "frame_{:04d}/Mogwai.ReflectMapGen.roughnessemmisive.4000.exr".format(i)
         roughEmmi_path = f"{input_path}/{file_name_format}"
-        file_name_format = "frame_{:04d}/Mogwai.ReflectMapGen.specular.50000.exr".format(i)
+        file_name_format = "frame_{:04d}/Mogwai.ReflectMapGen.specular.4000.exr".format(i)
         specular_path = f"{input_path}/{file_name_format}"
         
         if os.path.exists(image_path):
