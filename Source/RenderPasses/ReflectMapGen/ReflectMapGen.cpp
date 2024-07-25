@@ -55,6 +55,8 @@ const char kOutputColor[] = "color";
 const char kOutputDiffuse[] = "diffuse";
 const char kOutputSpecular[] = "specular";
 const char kOutputRoughEmmi[] = "roughnessemmisive";
+const char kOutputProbePoses[] = "probePoses";
+const char kOutputRayDirs[] = "rayDirs";
 
 const ChannelList kInputChannels = {
     // clang-format off
@@ -69,6 +71,8 @@ const ChannelList kOutputChannels = {
     { kOutputDiffuse,        "gOutputDiffuse",    "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputSpecular,      "gOutputSpecular",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputRoughEmmi,      "gOutputRoughEmmi",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputProbePoses,      "gOutputProbePoses",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputRayDirs,      "gOutputRayDirs",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float }
     // clang-format on
 };
 
@@ -415,6 +419,10 @@ void ReflectMapGen::setScene(RenderContext* pRenderContext, const ref<Scene>& pS
          //mSeed = 1406584362;
         //mSeed = static_cast<unsigned int>(std::time(0));
         //-0.056081911802012024, "new_y" : 0.1454754890310627, "new_z" : 0.24149841116601556
+        mSceneAABBCenter = mpScene->getSceneBounds().center();
+        mSceneAABBExtent = mpScene->getSceneBounds().extent();
+        std::cout << "mSceneAABBCenter: " << mSceneAABBCenter.x << "  " << mSceneAABBCenter.y << "  " << mSceneAABBCenter.z << std::endl;
+        std::cout << "mSceneAABBExtent: " << mSceneAABBExtent.x << "  " << mSceneAABBExtent.y << "  " << mSceneAABBExtent.z << std::endl;
     }
 }
 

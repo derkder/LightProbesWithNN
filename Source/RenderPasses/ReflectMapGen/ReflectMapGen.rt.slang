@@ -90,6 +90,8 @@ RWTexture2D<float4> gOutputColor;
 RWTexture2D<float4> gOutputDiffuse;
 RWTexture2D<float4> gOutputSpecular;
 RWTexture2D<float4> gOutputRoughEmmi;
+RWTexture2D<float4> gOutputProbePoses;
+RWTexture2D<float4> gOutputRayDirs;
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -110,12 +112,12 @@ static const float kRayTMax = FLT_MAX;
 //反过来不行是因为有球挡住了
 static const bool kIsInverted = false;
 static const int currentState = From_Left;
+static const int frameCap = 10000;
 
 // 线性同余生成器参数
 static const int A = 1664525;
 static const int C = 1013904223;
 static const int M = 2147483647; // 使用较大的质数作为模数
-
 
 /**
  * Payload for shadow ray.
@@ -498,65 +500,11 @@ void myHandleHit(ShadingData sd, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
-float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDim)
-{
-    //return float3(1.0f);
-
-    float3 outColor = float3(0.f);
-
-    float3 primaryRayOrigin = gScene.camera.getPosition();
-    primaryRayOrigin = float3(probePos.xy, primaryRayOrigin.z);
-
-    if (From_Left == currentState) {
-        primaryRayOrigin.z = primaryRayOrigin.x;
-        primaryRayOrigin.x = -0.27;
-    }
-    else if (From_Right == currentState) {
-        primaryRayOrigin.z = primaryRayOrigin.x;
-        primaryRayOrigin.x = 0.27;
-    }
-    else if(From_Back == currentState){
-        primaryRayOrigin.z = -primaryRayOrigin.z;
-    }
-    
-    // const float3 primaryRayDir = normalize(gSceneAABBCenter - primaryRayOrigin);
-    const float3 primaryRayDir = normalize(kProbeLoc - primaryRayOrigin);
-
-
-    // 直接发射光线，移除使用 gbuffer的逻辑
-    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
-    ScatterRayData rayData = ScatterRayData(sg);
-    if(!kIsInverted){
-        rayData.origin = primaryRayOrigin;
-        rayData.direction = primaryRayDir;
-    }
-    else{
-        rayData.origin = kProbeLoc;
-        rayData.direction = -primaryRayDir;
-    }
-
-    bool hasRadiance = true;
-    float3 radiance1 = float3(0.f);
-    for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
-    {
-        //if (1 == depth) return rayData.radiance;
-        if(0 == depth){
-            //should fake the first bounce
-        }
-        traceScatterRay(rayData);
-        if(0 == depth) radiance1 = rayData.radiance;
-    }
-
-    // Store contribution from scatter ray.
-    outColor += rayData.radiance;
-    if (hasRadiance) return outColor - radiance1;
-    else return gScene.envMap.eval(primaryRayDir);
-}
-
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
     //return float3(1.0f);
     float3 mProbeLoc = float3(0.26089, 0.48183, 0.08310);
+    //float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
     float radius = 0.005f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y;
@@ -579,7 +527,7 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
         if (0 == depth)
         {
             VertexData v = {};
-            v.posW = rayData.origin;
+            v.posW = mProbeLoc;
             v.normalW = -primaryRayDir;
             v.faceNormalW = v.normalW;
             v.texC = float2(0.1, 0.1);
@@ -611,120 +559,71 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
         
     }
 
-    // //这里加个逻辑，先用sample算一个output的dir和posibity，然后用out_dir算brdf
-    // // Store contribution from scatter ray.
-    // // Sample material.
-    // //原先在每次bounce都要调用的traceScatterRay里面
-    // BSDFSample bsdfSample;
-    // // float3 wiLocal = sf.toLocal(sd.V);
-    // // float3 woLocal = {};
-    // // StandardBSDF bsdf = StandardBSDF(wiLocal, sd.mtl, data);
-    // // bsdf.sample(wiLocal, woLocal, result.pdf, result.weight, result.lobeType, sg);
-    // // result.wo = sf.fromLocal(woLocal);
-    // VertexData v = {};
-    // v.posW =
-    // ShadingData sdTemp = gScene.materials.prepareShadingData(v, 0/*materialID*/, -primaryRayDir, 0);
-    
-    // if (mi.sample(sdTemp, rayData.sg, bsdfSample, kUseImportanceSampling))
-    // {
-    //     rayData.direction = bsdfSample.wo;
-    //     rayData.thp *= bsdfSample.weight;
-    // }
-
     outColor += rayData.radiance; // accumulate
     return outColor;
 }
 
-/**
- * This is the main entry point for the minimal path tracer.
- *
- * One path per pixel is generated, which is traced into the scene.
- * The path tracer is written as a for-loop over path segments.
- *
- * Built-in light sources (point, directional) are sampled explicitly at each
- * path vertex. The contributions from area lights (env map and mesh lights)
- * are explicitly added by the scatter ray hit/miss shaders.
- *
- * @param[in] pixel Pixel to trace a path for.
- * @param[in] frameDim Dimension of the frame in pixels.
- * @return Returns the estimated color (radiance).
- */
-float3 tracePath(const uint2 pixel, const uint2 frameDim)
+float3 MyTracePathRand(const uint2 pixel, const uint2 frameDim, float3 dir, float3 probePos)
 {
+    //return float3(1.0f);
+    //float3 mProbeLoc = float3(0.26089, 0.48183, 0.08310);
+    //float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
+    float radiusH = 0.005f; // 0.005(sphere radius) + 0.002(bias)
+    float radiusO = 0.006f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
+    // float theta = M_PI * pixel.y / frameDim.y;
+    // float phi = 2 * M_PI * pixel.x / frameDim.x;
+    // float x = radius * sin(theta) * cos(phi);
+    // float z = radius * sin(theta) * sin(phi);
+    // float y = radius * cos(theta);
+    float3 primaryRayOrigin = probePos + dir * radiusO;
+    const float3 primaryRayDir = -dir;
 
-    const float3 primaryRayOrigin = gScene.camera.getPosition();
-    const float3 primaryRayDir = getPrimaryRayDir(pixel, frameDim, gScene.camera);
-
-    const HitInfo hit = HitInfo(gVBuffer[pixel]);
-    if (hit.isValid())
+    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); //random number generator
+    ScatterRayData rayData = ScatterRayData(sg);
+    rayData.origin = probePos + dir * radiusH;
+    rayData.direction = primaryRayDir;
+    float3 radiance0 = float3(0.f);
+    float3 radiance1 = float3(0.f);
+    for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
-        // Pixel represents a valid primary hit. Compute its contribution.
-
-        const bool isCurveHit = hit.getType() == HitType::Curve;
-        let lod = ExplicitLodTextureSampler(0.f);
-
-        // Load shading data.
-        ShadingData sd = loadShadingData(hit, primaryRayOrigin, primaryRayDir, lod);
-
-        // Create material instance at shading point.
-        let mi = gScene.materials.getMaterialInstance(sd, lod);
-
-        // Create sample generator.
-        SampleGenerator sg = SampleGenerator(pixel, gFrameCount);
-
-        // Advance the generator to the first available dimension.
-        // TODO: This is potentially expensive. We may want to store/restore the state from memory if it becomes a problem.
-        for (uint i = 0; i < gPRNGDimension; i++)
-            sampleNext1D(sg);
-
-        // Compute ray origin for new rays spawned from the G-buffer.
-        float3 rayOrigin;
-        if (isCurveHit)
+        // if (1 == depth) return rayData.radiance;
+        if (0 == depth)
         {
-            // For curves, we set the new origin at the sphere center.
-            rayOrigin = sd.posW - sd.curveRadius * sd.frame.N;
+            VertexData v = {};
+            v.posW = probePos; // 不能干脆用probePos的原因是tangent可能会错？也不一定错
+            v.normalW = -primaryRayDir;
+            v.faceNormalW = v.normalW;
+            v.texC = float2(0.1, 0.1);
+            //v.tangent
+            float3 arbitraryVector = (abs(v.normalW.y) < 0.999f) ? float3(0, 1, 0) : float3(1, 0, 0);
+            float3 tangent = normalize(cross(arbitraryVector, v.normalW));
+            float3 bitangent = cross(v.normalW, tangent);
+            float handedness = (dot(cross(v.normalW, tangent), bitangent) < 0.0f) ? -1.0f : 1.0f;
+            v.tangentW = float4(tangent, handedness);
+            v.curveRadius = 0;
+            v.coneTexLODValue = 0;
+            let lod = ExplicitLodTextureSampler(0.f);
+            uint matID = 0;
+            ShadingData sdTemp = gScene.materials.prepareShadingData(v, matID/*materialID*/, -primaryRayDir, lod/*lod*/);
+            myHandleHit(sdTemp, rayData);
         }
         else
         {
-            rayOrigin = sd.computeRayOrigin();
-        }
-
-        if (kComputeDirect)
-        {
-            // Always output directly emitted light, independent of whether emissive materials are treated as light sources or not.
-            outColor += mi.getProperties(sd).emission;
-
-            // Add contribution of direct light from analytic lights.
-            
-            // Light probe and mesh lights are handled by the scatter ray hit/miss shaders.
-            outColor += kUseAnalyticLights ? evalDirectAnalytic(sd, mi, sg) : float3(0.f);
-        }
-
-        // Prepare ray payload.
-        ScatterRayData rayData = ScatterRayData(sg);
-
-        // Generate scatter ray.
-        if (!generateScatterRay(sd, mi, isCurveHit, rayOrigin, rayData))
-            rayData.terminated = true;
-
-        // Follow path into the scene and compute its total contribution.
-        for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
-        {
-            // Trace scatter ray. If it hits geometry, the closest hit shader samples
-            // direct illumination and generates the next scatter ray.
             traceScatterRay(rayData);
+            if (1 == depth)
+            {
+                radiance1 = rayData.radiance - radiance0;   
+                gOutputDiffuse[pixel].xyz = rayData.diffuse;
+                gOutputSpecular[pixel].xyz = rayData.specular;
+                gOutputRoughEmmi[pixel].x = rayData.roughness;
+                gOutputRoughEmmi[pixel].y = rayData.isEmissive;
+            } 
         }
-
-        // Store contribution from scatter ray.
-        outColor += rayData.radiance;
-    }
-    else
-    {
-        // Background pixel.
-        outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
+        
     }
 
+    outColor += rayData.radiance; // accumulate
     return outColor;
 }
 
@@ -886,15 +785,129 @@ bool shouldReturnTrue(int x, int y, int seed, uint2 frameD) {
     return randomValue < maxTrueCount;
 }
 
+uint hash(uint x, uint y, uint frame) {
+    uint h = x + y * 40503u + frame * 20183u; // 使用较小的素数
+    h ^= h >> 13;
+    h *= 18043u; // 较小的素数
+    h ^= h >> 8;
+    h *= 24103u; // 较小的素数
+    h ^= h >> 9;
+    return h;
+}
 
-[shader("raygeneration")]
+// 生成一个随机的归一化方向向量
+float3 generateRandomNormalizedDirection(uint x, uint y, uint frame)
+{
+    // 使用坐标 (x, y) 和帧数 frame 生成种子
+    uint seed = hash(x, y, frame);
+
+    // 使用线性同余生成器 (LCG) 生成伪随机数
+    seed = (1664525 * seed + 1013904223);
+    float xRand = (float(seed & 0xFFFFFF) / float(0xFFFFFF)) * 2.0 - 1.0;
+
+    seed = (1664525 * seed + 1013904223);
+    float yRand = (float(seed & 0xFFFFFF) / float(0xFFFFFF)) * 2.0 - 1.0;
+
+    seed = (1664525 * seed + 1013904223);
+    float zRand = (float(seed & 0xFFFFFF) / float(0xFFFFFF)) * 2.0 - 1.0;
+
+    // 归一化向量
+    float length = sqrt(xRand * xRand + yRand * yRand + zRand * zRand);
+    return float3(xRand / length, yRand / length, zRand / length);
+}
+
+// Xorshift 伪随机数生成器 让下面的随机数生成和上面的区分开来
+uint xorshift32(uint state)
+{
+    state ^= state << 13;
+    state ^= state >> 17;
+    state ^= state << 5;
+    return state;
+}
+
+// 生成三个不同的从-0.5到0.5之间的数字
+float3 generateThreeUniqueRandomNumbers(uint x, uint y, uint frame)
+{
+    // 使用坐标 (x, y) 和帧数 frame 生成种子
+    uint seed = hash(x, y, frame);
+
+    float3 result;
+
+    // 使用 Xorshift 生成伪随机数
+    seed = xorshift32(seed);
+    result.x = (float(seed & 0xFFFFFF) / float(0xFFFFFF)) - 0.5;
+
+    seed = xorshift32(seed);
+    result.y = (float(seed & 0xFFFFFF) / float(0xFFFFFF)) - 0.5;
+
+    seed = xorshift32(seed);
+    result.z = (float(seed & 0xFFFFFF) / float(0xFFFFFF)) - 0.5;
+
+    return result;
+}
+
+//下面的东西不会不是一帧跑完所有的再接着跑下一帧的吧
+//但有一说一我感觉应该不是
+//可以测试一下，返回1 / gFrameCount的颜色看看是不是一直一样的
+//即使不是也可以用种子控制读写
+[shader("raygeneration")] 
 void rayGen()
 {
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+
+    float3 dir;
+    float3 probeExtend;
+    float3 probePos;
+
+    if(0 == gFrameCount % frameCap)
+    {
+        uint temp = gFrameCount / frameCap; 
+        dir = generateRandomNormalizedDirection(pixel.x, pixel.y, temp);
+        probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, temp);
+        probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
+        // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
+        gOutputProbePoses[pixel] = float4(probePos, 1.0); 
+        gOutputRayDirs[pixel] = float4(dir, 1.0);
+    }
+    else
+    {
+        dir = gOutputRayDirs[pixel].xyz;
+        probePos = gOutputProbePoses[pixel].xyz;
+    }
+    float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
+
+    if(0 == (gFrameCount + 50) % frameCap)
+    {
+        gOutputColor[pixel] = float4(color, 1.f);
+    }
     
     //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
 
-    float3 color = MyTracePathMap(pixel, frameDim);
-    gOutputColor[pixel] = float4(color, 1.f);
+    //float3 color = MyTracePathMap(pixel, frameDim);
+    //uint temp = gFrameCount / 500; // change the output every 5000 frames，这个值在cpp里是加的，怎么还是不会改变渲染结果呢我真的吐了
+    //return float3(1.0f);
+    //float3 probePos = float3(0.26089, 0.48183, 0.08310);
+    //float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
+
+    // float radius = 0.005f; 
+    // float theta = M_PI * 287 / frameDim.y;
+    // float phi = 2 * M_PI * 27 / frameDim.x;
+    // float x = sin(theta) * cos(phi);
+    // float z = sin(theta) * sin(phi);
+    // float y = cos(theta);
+    // float3 dir = float3(x, y, z);
+    //float3 dir = normalize(float3(x, y, z));
+
+    //下面的逻辑应该五千帧算一次不用老是算，这样上面的frameCount就算不生效也可以在cpp里生成随机种子
+    // float3 dir = generateRandomNormalizedDirection(pixel.x, pixel.y, temp);
+    // float3 probePos = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, temp);
+    // probePos = gSceneAABBCenter + probePos * gSceneAABBExtent;
+    // //probePos = float3(0.26089, 0.48183, 0.08310);
+    
+    // //probePos += gSceneAABBCenter + float3(probePos.x * gSceneAABBExtent.x, probePos.y * gSceneAABBExtent.y, probePos.z * gSceneAABBExtent.z);
+    // float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
+    // gOutputProbePoses[pixel] = float4(probePos, 1.0);
+    // gOutputRayDirs[pixel] = float4(dir, 1.0);
+    // gOutputColor[pixel] = float4(color, 1.f);
 }

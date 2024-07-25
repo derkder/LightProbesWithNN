@@ -18,6 +18,8 @@ def render_graph_ReflectMapGen():
     g.markOutput("ReflectMapGen.diffuse")
     g.markOutput("ReflectMapGen.specular")
     g.markOutput("ReflectMapGen.roughnessemmisive")
+    g.markOutput("ReflectMapGen.probePoses")
+    g.markOutput("ReflectMapGen.rayDirs")
     return g
 
 def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range, idx):
@@ -68,13 +70,13 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
 # output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw"
 # json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw/info.json"
 scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
-output_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw"
+output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
 json_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json"
 pos_line_idx = 47  # Adjusted to the correct line index
 n_collect_frames = 100000000
-n_match_frames = 4000
+n_match_frames = 10000
 # n_match_frames = 1000
-n_sample_count = 2941
+n_sample_count = 0
 
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)
@@ -84,7 +86,7 @@ except NameError: pass
 # m.loadScene(scene_path)
 
 # for i in range(n_collect_frames):
-#     i += 1
+#     i += 1 // woc 这里是不是一直多加了
 #     renderFrame()
 
 #     if 0 == (i % n_match_frames):
@@ -103,14 +105,16 @@ except NameError: pass
 
 
 
-# m.loadScene(scene_path)
+m.loadScene(scene_path)
+for i in range(n_collect_frames):
+    if(0 == i):
+        i += 1 # 防止第一帧被保存
 
-# n_collect_frames = 3000
-# for i in range(n_collect_frames):
-#     renderFrame()
-#     if i < 2998:
-#         continue
-#     outputDir = "C:/Files/CGProject/temp1/frame_{:04d}".format(i)
-#     os.makedirs(outputDir, exist_ok=True)
-#     m.frameCapture.outputDir = outputDir
-#     m.frameCapture.capture()
+    renderFrame()
+    if 0 == ((i + 20) % n_match_frames):
+        file_name_format = "frame_{:04d}".format(n_match_frames - 1)
+        outputDir = f"{output_path}/{file_name_format}"
+        os.makedirs(outputDir, exist_ok=True)
+        m.frameCapture.outputDir = outputDir
+        m.frameCapture.capture()
+        n_sample_count += 1
