@@ -74,7 +74,8 @@ output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
 json_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json"
 pos_line_idx = 47  # Adjusted to the correct line index
 n_collect_frames = 100000000
-n_match_frames = 10000
+n_match_frames = 2000
+n_cap_offset = 10
 # n_match_frames = 1000
 n_sample_count = 0
 
@@ -103,18 +104,31 @@ except NameError: pass
 
 
 
-
+# ----------------------------------
 
 m.loadScene(scene_path)
 for i in range(n_collect_frames):
-    if(0 == i):
-        i += 1 # 防止第一帧被保存
+    # if(0 == i):
+    #     i += 1 # 防止第一帧被保存
 
     renderFrame()
-    if 0 == ((i + 20) % n_match_frames):
-        file_name_format = "frame_{:04d}".format(n_match_frames - 1)
+    if 0 == ((i + n_cap_offset) % n_match_frames):
+        file_name_format = "frame_{:04d}".format(n_sample_count)
         outputDir = f"{output_path}/{file_name_format}"
         os.makedirs(outputDir, exist_ok=True)
         m.frameCapture.outputDir = outputDir
         m.frameCapture.capture()
         n_sample_count += 1
+
+# ----------------------------------
+
+
+# m.loadScene(scene_path)
+# for i in range(20):
+#     renderFrame()
+#     file_name_format = "frame_{:04d}".format(n_sample_count)
+#     outputDir = f"{output_path}/{file_name_format}"
+#     os.makedirs(outputDir, exist_ok=True)
+#     m.frameCapture.outputDir = outputDir
+#     m.frameCapture.capture()
+#     n_sample_count += 1

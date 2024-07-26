@@ -140,7 +140,7 @@ protected:
     /// Maximum number of frames to accumulate before triggering overflow. 0 means infinite accumulation.
     uint32_t mMaxFrameCount = 0;
     /// What to do after maximum number of frames are accumulated.
-    OverflowMode mOverflowMode = OverflowMode::Stop;
+    OverflowMode mOverflowMode = OverflowMode::Reset;
 
     /// Output format (uses default when set to ResourceFormat::Unknown).
     ResourceFormat mOutputFormat = ResourceFormat::Unknown;

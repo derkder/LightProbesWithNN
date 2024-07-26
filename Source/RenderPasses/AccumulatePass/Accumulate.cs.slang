@@ -69,6 +69,9 @@ RWTexture2D<float4> gLastFrameCorr; // If mode is SingleKahan
 RWTexture2D<uint4> gLastFrameSumLo; // If mode is Double
 RWTexture2D<uint4> gLastFrameSumHi; // If mode is Double
 
+static const int frameCap = 2000;
+static const int offsetCap = 1;
+
 /**
  * Single precision standard summation.
  */
@@ -80,10 +83,16 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     const uint2 pixelPos = dispatchThreadId.xy;
     const float4 curColor = gCurFrame[pixelPos];
 
+    // gFrameCount在minipt从1开始计数的，这里是从O开始计数的
+    if(0 == (gAccumCount - offsetCap) % frameCap)
+    {
+        gLastFrameSum[pixelPos] = 0;
+    }
+
     float4 output;
     if (gAccumulate)
     {
-        float curWeight = 1.0 / (gAccumCount + 1);
+        float curWeight = 1.0 / ((gAccumCount - offsetCap) % frameCap + 1);
 
         if (gMovingAverageMode)
         {
@@ -109,6 +118,11 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     }
 
     gOutputFrame[pixelPos] = output;
+
+    //-------------------------------------------
+
+    // const uint2 pixelPos = dispatchThreadId.xy;
+    // gOutputFrame[pixelPos] = (float)gAccumCount / 10;
 }
 
 /**
@@ -117,36 +131,41 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
 [numthreads(16, 16, 1)]
 void accumulateSingleCompensated(uint3 dispatchThreadId: SV_DispatchThreadID)
 {
-    if (any(dispatchThreadId.xy >= gResolution))
-        return;
-    const uint2 pixelPos = dispatchThreadId.xy;
-    const float4 curColor = gCurFrame[pixelPos];
+    // if (any(dispatchThreadId.xy >= gResolution))
+    //     return;
+    // const uint2 pixelPos = dispatchThreadId.xy;
 
-    float4 output;
-    if (gAccumulate)
-    {
-        // Fetch the previous sum and running compensation term.
-        float4 sum = gLastFrameSum[pixelPos];
-        // c measures how large (+) or small (-) the current sum is compared to what it should be.
-        float4 c = gLastFrameCorr[pixelPos];
+    // if(0 == (gAccumCount - 10) % frameCap)  // gFrameCount 从1开始计数的
+    // {
+    //     gCurFrame[pixelPos] = 0;
+    // }
+    // const float4 curColor = gCurFrame[pixelPos];
 
-        // Adjust current value to minimize the running error.
-        // Compute the new sum by adding the adjusted current value.
-        float4 y = curColor - c;
-        // The value we'll see in 'sum' on the next iteration.
-        float4 sumNext = sum + y;
-        output = sumNext / (gAccumCount + 1);
+    // float4 output;
+    // if (gAccumulate)
+    // {
+    //     // Fetch the previous sum and running compensation term.
+    //     float4 sum = gLastFrameSum[pixelPos];
+    //     // c measures how large (+) or small (-) the current sum is compared to what it should be.
+    //     float4 c = gLastFrameCorr[pixelPos];
 
-        gLastFrameSum[pixelPos] = sumNext;
-        // Store new correction term.
-        gLastFrameCorr[pixelPos] = (sumNext - sum) - y;
-    }
-    else
-    {
-        output = curColor;
-    }
+    //     // Adjust current value to minimize the running error.
+    //     // Compute the new sum by adding the adjusted current value.
+    //     float4 y = curColor - c;
+    //     // The value we'll see in 'sum' on the next iteration.
+    //     float4 sumNext = sum + y;
+    //     output = sumNext / ((gAccumCount % frameCap) + 1);
 
-    gOutputFrame[pixelPos] = output;
+    //     gLastFrameSum[pixelPos] = sumNext;
+    //     // Store new correction term.
+    //     gLastFrameCorr[pixelPos] = (sumNext - sum) - y;
+    // }
+    // else
+    // {
+    //     output = curColor;
+    // }
+
+    // gOutputFrame[pixelPos] = output;
 }
 
 /**
@@ -155,53 +174,59 @@ void accumulateSingleCompensated(uint3 dispatchThreadId: SV_DispatchThreadID)
 [numthreads(16, 16, 1)]
 void accumulateDouble(uint3 dispatchThreadId: SV_DispatchThreadID)
 {
-    if (any(dispatchThreadId.xy >= gResolution))
-        return;
-    const uint2 pixelPos = dispatchThreadId.xy;
-    const float4 curColor = gCurFrame[pixelPos];
+    // if (any(dispatchThreadId.xy >= gResolution))
+    //     return;
+    // const uint2 pixelPos = dispatchThreadId.xy;
 
-    float4 output;
-    if (gAccumulate)
-    {
-        double curWeight = 1.0 / (gAccumCount + 1);
+    // if(0 == (gAccumCount - 1) % frameCap)  // gFrameCount 从1开始计数的
+    // {
+    //     gCurFrame[pixelPos] = 0;
+    // }
+    // const float4 curColor = gCurFrame[pixelPos];
 
-        // Fetch the previous sum in double precision.
-        // There is no 'double' resource format, so the bits are stored in two uint4 textures.
-        uint4 sumLo = gLastFrameSumLo[pixelPos];
-        uint4 sumHi = gLastFrameSumHi[pixelPos];
+    // float4 output;
+    // if (gAccumulate)
+    // {
+    //     //这里的逻辑也不对，要确保渲染出来的第一帧的时候要能得到1的权重
+    //     double curWeight = 1.0 / ((gAccumCount - 1) % frameCap + 1);
 
-        double sum[4];
+    //     // Fetch the previous sum in double precision.
+    //     // There is no 'double' resource format, so the bits are stored in two uint4 textures.
+    //     uint4 sumLo = gLastFrameSumLo[pixelPos];
+    //     uint4 sumHi = gLastFrameSumHi[pixelPos];
 
-        if (gMovingAverageMode)
-        {
-            // Exponential weighted moving average mode.
-            for (int i = 0; i < 4; i++)
-            {
-                sum[i] = asdouble(sumLo[i], sumHi[i]);
-                sum[i] = sum[i] * (1.0 - curWeight) + (double)curColor[i] * curWeight;
-                asuint(sum[i], sumLo[i], sumHi[i]);
-                output[i] = (float)sum[i];
-            }
-        }
-        else
-        {
-            // High precision mode with no frame limit.
-            for (int i = 0; i < 4; i++)
-            {
-                sum[i] = asdouble(sumLo[i], sumHi[i]);
-                sum[i] += (double)curColor[i];
-                asuint(sum[i], sumLo[i], sumHi[i]);
-                output[i] = (float)(sum[i] * curWeight);
-            }
-        }
+    //     double sum[4];
 
-        gLastFrameSumLo[pixelPos] = sumLo;
-        gLastFrameSumHi[pixelPos] = sumHi;
-    }
-    else
-    {
-        output = curColor;
-    }
+    //     if (gMovingAverageMode)
+    //     {
+    //         // Exponential weighted moving average mode.
+    //         for (int i = 0; i < 4; i++)
+    //         {
+    //             sum[i] = asdouble(sumLo[i], sumHi[i]);
+    //             sum[i] = sum[i] * (1.0 - curWeight) + (double)curColor[i] * curWeight;
+    //             asuint(sum[i], sumLo[i], sumHi[i]);
+    //             output[i] = (float)sum[i];
+    //         }
+    //     }
+    //     else
+    //     {
+    //         // High precision mode with no frame limit.
+    //         for (int i = 0; i < 4; i++)
+    //         {
+    //             sum[i] = asdouble(sumLo[i], sumHi[i]);
+    //             sum[i] += (double)curColor[i];
+    //             asuint(sum[i], sumLo[i], sumHi[i]);
+    //             output[i] = (float)(sum[i] * curWeight);
+    //         }
+    //     }
 
-    gOutputFrame[pixelPos] = output;
+    //     gLastFrameSumLo[pixelPos] = sumLo;
+    //     gLastFrameSumHi[pixelPos] = sumHi;
+    // }
+    // else
+    // {
+    //     output = curColor;
+    // }
+
+    // gOutputFrame[pixelPos] = output;
 }

@@ -112,7 +112,8 @@ static const float kRayTMax = FLT_MAX;
 //反过来不行是因为有球挡住了
 static const bool kIsInverted = false;
 static const int currentState = From_Left;
-static const int frameCap = 10000;
+static const int frameCap = 2000;
+static const int offsetCap = 1;
 
 // 线性同余生成器参数
 static const int A = 1664525;
@@ -853,6 +854,11 @@ float3 generateThreeUniqueRandomNumbers(uint x, uint y, uint frame)
 [shader("raygeneration")] 
 void rayGen()
 {
+    // uint2 pixel = DispatchRaysIndex().xy;
+    // gOutputProbePoses[pixel] = float4((float)gFrameCount / 10);
+
+    //----------------
+
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
 
@@ -860,7 +866,7 @@ void rayGen()
     float3 probeExtend;
     float3 probePos;
 
-    if(0 == gFrameCount % frameCap)
+    if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
     {
         uint temp = gFrameCount / frameCap; 
         dir = generateRandomNormalizedDirection(pixel.x, pixel.y, temp);
@@ -875,12 +881,12 @@ void rayGen()
         dir = gOutputRayDirs[pixel].xyz;
         probePos = gOutputProbePoses[pixel].xyz;
     }
+    //dir = float3(-0.54297, 0.67627, -0.49805);
+    //probePos = float3(-0.01546, 0.52881, 0.05624);
     float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
+    gOutputColor[pixel] = float4(color, 1.f);
 
-    if(0 == (gFrameCount + 50) % frameCap)
-    {
-        gOutputColor[pixel] = float4(color, 1.f);
-    }
+    //----------------
     
     //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
 
