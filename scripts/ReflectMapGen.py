@@ -11,15 +11,21 @@ def render_graph_ReflectMapGen():
     g.addPass(ReflectMapGen, "ReflectMapGen")
     VBufferRT = createPass("VBufferRT", {'samplePattern': 'Stratified', 'sampleCount': 16})
     g.addPass(VBufferRT, "VBufferRT")
+    ToneMapper = createPass("ToneMapper", {'autoExposure': False, 'exposureCompensation': 0.0})
+    g.addPass(ToneMapper, "ToneMapper")
+
     g.addEdge("VBufferRT.vbuffer", "ReflectMapGen.vbuffer")
     g.addEdge("VBufferRT.viewW", "ReflectMapGen.viewW")
     g.addEdge("ReflectMapGen.color", "AccumulatePass.input")
+    g.addEdge("AccumulatePass.output", "ToneMapper.src")
+
     g.markOutput("AccumulatePass.output")
     g.markOutput("ReflectMapGen.diffuse")
     g.markOutput("ReflectMapGen.specular")
     g.markOutput("ReflectMapGen.roughnessemmisive")
     g.markOutput("ReflectMapGen.probePoses")
     g.markOutput("ReflectMapGen.rayDirs")
+    g.markOutput("ToneMapper.dst")
     return g
 
 def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_range, idx):
@@ -74,7 +80,7 @@ output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
 json_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json"
 pos_line_idx = 47  # Adjusted to the correct line index
 n_collect_frames = 100000000
-n_match_frames = 2000
+n_match_frames = 5000
 n_cap_offset = 10
 # n_match_frames = 1000
 n_sample_count = 0

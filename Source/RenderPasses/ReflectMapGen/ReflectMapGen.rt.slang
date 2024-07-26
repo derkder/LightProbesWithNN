@@ -112,7 +112,7 @@ static const float kRayTMax = FLT_MAX;
 //反过来不行是因为有球挡住了
 static const bool kIsInverted = false;
 static const int currentState = From_Left;
-static const int frameCap = 2000;
+static const int frameCap = 5000;
 static const int offsetCap = 1;
 
 // 线性同余生成器参数

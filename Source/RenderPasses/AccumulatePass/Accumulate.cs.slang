@@ -69,7 +69,7 @@ RWTexture2D<float4> gLastFrameCorr; // If mode is SingleKahan
 RWTexture2D<uint4> gLastFrameSumLo; // If mode is Double
 RWTexture2D<uint4> gLastFrameSumHi; // If mode is Double
 
-static const int frameCap = 2000;
+static const int frameCap = 5000;
 static const int offsetCap = 1;
 
 /**
