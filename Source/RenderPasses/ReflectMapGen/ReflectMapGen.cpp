@@ -32,6 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <random>
 #include <ctime>
 
 extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registry)
@@ -155,8 +156,24 @@ void ReflectMapGen::prepareResolve(const RenderData& renderData)
     var["output"] = renderData.getTexture(kOutputColor);// 这个pass计算的结果
 }
 
+int generateRandomNumber(int min, int max)
+{
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    std::default_random_engine generator(std::rand());
+    std::uniform_int_distribution<int> distribution(min, max);
+    return distribution(generator);
+}
+
 void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
+    if (0 == mFrameCount % frameCap)
+    {
+        //avoid overflow in slang
+        mSeed = generateRandomNumber(0, 210590); 
+        std::cout << "cur seed: " << mSeed << std::endl;
+    }
+
+
     // Update refresh flag if options that affect the output have changed.
     auto& dict = renderData.getDictionary();
     if (mOptionsChanged)
@@ -243,7 +260,7 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     var["CB"]["gIntervalY"] = mIntervalY;
     var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * sliceZPercent; // posZ of light probe
     var["CB"]["gIsCutting"] = mIsCutting;
-    var["CB"]["seed"] = mSeed;
+    var["CB"]["gSeed"] = mSeed;
     var["CB"]["kProbeLoc"] = mProbeLoc;
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.

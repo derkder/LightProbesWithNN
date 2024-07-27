@@ -107,6 +107,7 @@ private:
     uint sampleNumsX = 1920;
     uint sampleNumsY = 1080;
     uint mSeed;
+    uint frameCap = 3000;
     float minZ;
     float maxZ;
     float sliceZPercent = 0.65f;
@@ -114,7 +115,7 @@ private:
     bool isPerspective = false;
     float3 mProbeLoc;
     // std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/temp/info.json";
-    std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json";
+    // std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json";
     std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
 
     // Ray tracing program.

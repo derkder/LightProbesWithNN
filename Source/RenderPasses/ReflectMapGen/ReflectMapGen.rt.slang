@@ -68,7 +68,7 @@ cbuffer CB
 {
     uint gFrameCount;    // Frame count since scene was loaded.
     uint gPRNGDimension; // First available PRNG dimension.
-    uint seed;
+    uint gSeed;
 
     float3 gSceneAABBCenter;
     float3 gSceneAABBExtent;
@@ -112,7 +112,7 @@ static const float kRayTMax = FLT_MAX;
 //反过来不行是因为有球挡住了
 static const bool kIsInverted = false;
 static const int currentState = From_Left;
-static const int frameCap = 5000;
+static const int frameCap = 3000;
 static const int offsetCap = 1;
 
 // 线性同余生成器参数
@@ -868,9 +868,9 @@ void rayGen()
 
     if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
     {
-        uint temp = gFrameCount / frameCap; 
-        dir = generateRandomNormalizedDirection(pixel.x, pixel.y, temp);
-        probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, temp);
+        //uint temp = gFrameCount / frameCap + seed; // 如果没加seed，每次打开程序，种子都和上一次打开是重复的
+        dir = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed);
+        probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed);
         probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
         // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
         gOutputProbePoses[pixel] = float4(probePos, 1.0); 

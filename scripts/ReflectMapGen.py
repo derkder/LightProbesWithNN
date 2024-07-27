@@ -72,15 +72,15 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
     
     print("Sphere position updated successfully")
 
-# scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
-# output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw"
+scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
+output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/rawraw"
 # json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw/info.json"
-scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
-output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
-json_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json"
+# scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
+# output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
+# json_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json"
 pos_line_idx = 47  # Adjusted to the correct line index
 n_collect_frames = 100000000
-n_match_frames = 5000
+n_match_frames = 3000
 n_cap_offset = 10
 # n_match_frames = 1000
 n_sample_count = 0
