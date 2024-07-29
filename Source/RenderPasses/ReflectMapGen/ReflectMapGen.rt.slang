@@ -504,7 +504,7 @@ void myHandleHit(ShadingData sd, inout ScatterRayData rayData)
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
     //return float3(1.0f);
-    float3 mProbeLoc = float3(0.26089, 0.48183, 0.08310);
+    float3 mProbeLoc = float3(0.24709033995380147, 0.08912807584807496, 0.23231801106817485);
     //float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
     float radius = 0.005f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
@@ -874,23 +874,29 @@ void rayGen()
         probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
         // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
         gOutputProbePoses[pixel] = float4(probePos, 1.0); 
-        gOutputRayDirs[pixel] = float4(dir, 1.0);
+        gOutputRayDirs[pixel] = - float4(dir, 1.0);
     }
     else
     {
         dir = gOutputRayDirs[pixel].xyz;
         probePos = gOutputProbePoses[pixel].xyz;
     }
-    //dir = float3(-0.54297, 0.67627, -0.49805);
-    //probePos = float3(-0.01546, 0.52881, 0.05624);
+    //dir = float3(-0.59131, -0.60645, -0.53174);
+    //probePos = float3(-0.24109, 0.27686, -0.15479);
     float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
     gOutputColor[pixel] = float4(color, 1.f);
 
     //----------------
     
     //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
+    // uint2 pixel = DispatchRaysIndex().xy;
+    // uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+    // float3 color = MyTracePathMap(pixel, frameDim);
+    // gOutputColor[pixel] = float4(color, 1.f);
 
-    //float3 color = MyTracePathMap(pixel, frameDim);
+    //----------------
+
+
     //uint temp = gFrameCount / 500; // change the output every 5000 frames，这个值在cpp里是加的，怎么还是不会改变渲染结果呢我真的吐了
     //return float3(1.0f);
     //float3 probePos = float3(0.26089, 0.48183, 0.08310);
@@ -915,5 +921,5 @@ void rayGen()
     // float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
     // gOutputProbePoses[pixel] = float4(probePos, 1.0);
     // gOutputRayDirs[pixel] = float4(dir, 1.0);
-    // gOutputColor[pixel] = float4(color, 1.f);
+    
 }
