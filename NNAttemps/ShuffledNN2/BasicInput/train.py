@@ -159,7 +159,7 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
     print(device)
     
-    batch_size = 2
+    batch_size = 4
     train_limit = 400
     val_limit = 50
     test_limit = 50

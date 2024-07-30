@@ -28,13 +28,25 @@
 #pragma once
 #include "Falcor.h"
 #include "RenderGraph/RenderPass.h"
+#include "Utils/Sampling/SampleGenerator.h"
+#include <chrono>
 
 using namespace Falcor;
 
+/**
+ * Minimal path tracer.
+ *
+ * This pass implements a minimal brute-force path tracer. It does purposely
+ * not use any importance sampling or other variance reduction techniques.
+ * The output is unbiased/consistent ground truth images, against which other
+ * renderers can be validated.
+ *
+ * Note that transmission and nested dielectrics are not yet supported.
+ */
 class CollectData : public RenderPass
 {
 public:
-    FALCOR_PLUGIN_CLASS(CollectData, "CollectData", "Insert pass description here.");
+    FALCOR_PLUGIN_CLASS(CollectData, "CollectData", "Minimal path tracer.");
 
     static ref<CollectData> create(ref<Device> pDevice, const Properties& props)
     {
@@ -45,12 +57,76 @@ public:
 
     virtual Properties getProperties() const override;
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
-    virtual void compile(RenderContext* pRenderContext, const CompileData& compileData) override {}
     virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
-    virtual void setScene(RenderContext* pRenderContext, const ref<Scene>& pScene) override {}
+    virtual void setScene(RenderContext* pRenderContext, const ref<Scene>& pScene) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    //CollectData
+    virtual void updateValue();
+
 private:
+    void parseProperties(const Properties& props);
+    void prepareResolve(const RenderData& renderData);
+    void prepareVars();
+
+    // Internal state
+
+    /// Current scene.
+    ref<Scene> mpScene;
+    /// GPU sample generator.
+    ref<SampleGenerator> mpSampleGenerator;
+
+    // Configuration
+
+    /// Max number of indirect bounces (0 = none).
+    uint mMaxBounces = 5;
+    /// Compute direct illumination (otherwise indirect only).
+    bool mComputeDirect = true;
+    /// Use importance sampling for materials.
+    bool mUseImportanceSampling = true;
+    // slice`s y axis
+    //uint mSliceZ = 0.5;//abandoned
+
+    // Runtime data
+
+    /// Frame count since scene was loaded.
+    uint mFrameCount = 0;
+    bool mOptionsChanged = false;
+
+    //used for collect data
+    float3 mSceneAABBCenter;
+    float3 mSceneAABBExtent;
+    float mIntervalX;
+    float mIntervalY;
+    //uint probeNumsX = 1920;
+    //uint probeNumsY = 1080;
+    uint probeNumsX = 1920;
+    uint probeNumsY = 1080;
+    uint sampleNumsX = 1920;
+    uint sampleNumsY = 1080;
+    uint mSeed;
+    uint frameCap = 3000;
+    float minZ;
+    float maxZ;
+    float sliceZPercent = 0.65f;
+    bool mIsCutting = true;
+    bool isPerspective = false;
+    float3 mProbeLoc;
+    // std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/temp/info.json";
+    // std::string json_path = "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json";
+    std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
+
+    // Ray tracing program.
+    struct
+    {
+        ref<Program> pProgram;
+        ref<RtBindingTable> pBindingTable;
+        ref<RtProgramVars> pVars;
+    } mTracer;
+
+
+    ref<ComputePass> mpResolvePass;
+    ref<Texture> mOutputTex;
 };

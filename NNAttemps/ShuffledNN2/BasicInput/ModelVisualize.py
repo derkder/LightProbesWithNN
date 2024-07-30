@@ -40,7 +40,7 @@ def generate_rays(frame_dim, radius, kProbeLoc):
     return np.array(hit_points), np.array(ray_dirs)
 
 # Load Data
-kprobeloc = np.array([0.10223756741364604, 0.40497915469098145, -0.04942282003762763])
+kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
 model_file = "NNAttemps/ShuffledNN2/models/final_light_probe_model.pth"
 output_path = "NNAttemps/ShuffledNN2/out_imgs/output00_5.exr"
 frame_dim = (1920, 1080)
