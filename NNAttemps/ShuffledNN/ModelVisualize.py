@@ -56,6 +56,8 @@ class MLP(nn.Module):
         x = self.fc3(x)
         return x
 
+
+
 # Load Data
 kprobeloc = np.array([0.24709033995380147, 0.08912807584807496, 0.23231801106817485])
 model_file = "NNAttemps/ShuffledNN/models/final_light_probe_model_3.pth"

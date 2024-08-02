@@ -165,7 +165,7 @@ def main():
     plt.legend()
     plt.show()
 
-final_model_path = "NNAttemps/ShuffledNN/models/final_light_probe_model_3.pth"
+final_model_path = "NNAttemps/ShuffledNN2/models/final_light_probe_model_3.pth"
 # path to processed data
 output_path = "C:/Files/CGProject/NNLightProbes/dumped_data/temptemp/processed_real/"  
 if __name__ == '__main__':

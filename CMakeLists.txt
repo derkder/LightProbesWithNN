@@ -7,9 +7,10 @@ cmake_policy(SET CMP0057 NEW)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
+# MODIFIED BY ME: add CUDA language
 project(Falcor
     DESCRIPTION "Falcor Realtime Rendering Framework"
-    LANGUAGES CXX C
+    LANGUAGES CXX C CUDA
 )
 
 # -----------------------------------------------------------------------------

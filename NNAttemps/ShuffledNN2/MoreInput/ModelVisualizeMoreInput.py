@@ -75,13 +75,14 @@ def main():
     model.eval()
 
     # 生成光线
-    kprobeloc = np.array([0.16089, 0.28183, 0.08310])
+    # kprobeloc = np.array([0.16089, 0.28183, 0.08310])
+    kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
     frame_dim = (1920, 1080)
     radius = 0.005
     hit_points, ray_dirs = generate_rays(frame_dim, radius, kprobeloc)
 
     # 加载和预处理EXR文件
-    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempp/frame_0001"
+    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempp/frame_0000"
     exr_paths = {
         "diffuse": os.path.join(batch_folder_path, "Mogwai.CollectData.diffuse.4001.exr"),
         "roughnessemmisive": os.path.join(batch_folder_path, "Mogwai.CollectData.roughnessemmisive.4001.exr"),
@@ -98,7 +99,7 @@ def main():
     # images["diffuse"] *= 0.01
     # images["roughnessemmisive"] *= 0.1
     # images["specular"] *= 0.1
-    images["diffuse"] *= 0.1
+    images["diffuse"] *= 0.3
 
     # Prepare input data
     input_data = np.concatenate(
