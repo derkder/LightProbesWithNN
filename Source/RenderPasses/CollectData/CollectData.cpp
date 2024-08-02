@@ -166,12 +166,12 @@ int generateRandomNumber(int min, int max)
 
 void CollectData::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    if (0 == mFrameCount % frameCap)
-    {
-        //avoid overflow in slang
-        mSeed = generateRandomNumber(0, 210590); 
-        std::cout << "cur seed: " << mSeed << std::endl;
-    }
+    // if (0 == mFrameCount % frameCap)
+    // {
+    //     //avoid overflow in slang
+    //     mSeed = generateRandomNumber(0, 210590); 
+    //     std::cout << "cur seed: " << mSeed << std::endl;
+    // }
 
 
     // Update refresh flag if options that affect the output have changed.

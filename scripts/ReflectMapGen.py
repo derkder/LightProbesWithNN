@@ -72,11 +72,11 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
     
     print("Sphere position updated successfully")
 
-scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
-output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/rawraw"
+# scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
+# output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/rawraw"
 # json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw/info.json"
-# scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
-# output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
+scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
+output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"
 # json_path =  "D:/Projects/LightProbesWithNN/dumped_data/tempFullData722/raw/info.json"
 pos_line_idx = 47  # Adjusted to the correct line index
 n_collect_frames = 100000000
@@ -113,18 +113,18 @@ except NameError: pass
 # ----------------------------------
 
 m.loadScene(scene_path)
-for i in range(n_collect_frames):
-    # if(0 == i):
-    #     i += 1 # 防止第一帧被保存
+# for i in range(n_collect_frames):
+#     # if(0 == i):
+#     #     i += 1 # 防止第一帧被保存
 
-    renderFrame()
-    if 0 == ((i + n_cap_offset) % n_match_frames):
-        file_name_format = "frame_{:04d}".format(n_sample_count)
-        outputDir = f"{output_path}/{file_name_format}"
-        os.makedirs(outputDir, exist_ok=True)
-        m.frameCapture.outputDir = outputDir
-        m.frameCapture.capture()
-        n_sample_count += 1
+#     renderFrame()
+#     if 0 == ((i + n_cap_offset) % n_match_frames):
+#         file_name_format = "frame_{:04d}".format(n_sample_count)
+#         outputDir = f"{output_path}/{file_name_format}"
+#         os.makedirs(outputDir, exist_ok=True)
+#         m.frameCapture.outputDir = outputDir
+#         m.frameCapture.capture()
+#         n_sample_count += 1
 
 # ----------------------------------
 

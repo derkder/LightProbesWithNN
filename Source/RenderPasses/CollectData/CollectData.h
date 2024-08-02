@@ -30,6 +30,9 @@
 #include "RenderGraph/RenderPass.h"
 #include "Utils/Sampling/SampleGenerator.h"
 #include <chrono>
+#include "Params.slang"
+#include "Utils/CudaUtils.h"
+#include "Network.h"
 
 using namespace Falcor;
 
@@ -128,5 +131,13 @@ private:
 
 
     ref<ComputePass> mpResolvePass;
-    ref<Texture> mOutputTex;
+
+    ref<Buffer>             mpRadiosityQueryBuffer;
+    InteropBuffer           mpRadiosityQueryCudaBuffer;
+
+    ref<Texture>            mOutputTex;
+    cudaSurfaceObject_t     mOutputSurf;
+
+    CommonParams            mParams;
+    ReflectNetwork*       mNetwork = nullptr;
 };
