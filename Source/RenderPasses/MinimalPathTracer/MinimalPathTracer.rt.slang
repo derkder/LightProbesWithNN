@@ -85,6 +85,8 @@ Texture2D<float4> gViewW; // Optional
 
 // Outputs
 RWTexture2D<float4> gOutputColor;
+RWTexture2D<float4> gOutputHitposes;
+RWTexture2D<float4> gOutputRaydirs;
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -118,6 +120,7 @@ struct ScatterRayData
     float3 thp;       ///< Current path throughput. This is updated at each path vertex.
     uint pathLength;  ///< Path length in number of path segments (0 at origin, 1 at first secondary hit, etc.). Max 2^31.
     float3 origin;    ///< Next path segment origin.
+    bool isHitObject;
     float3 direction; ///< Next path segment direction.
     HitInfo hitInfo;
 
@@ -133,6 +136,7 @@ struct ScatterRayData
         this.radiance = float3(0, 0, 0);
         this.thp = float3(1, 1, 1);
         this.origin = float3(0, 0, 0);
+        this.isHitObject = false;
         this.direction = float3(0, 0, 0);
         this.sg = sg;
         this.hitInfo = {};
@@ -390,13 +394,13 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
-float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDim)
+float3 MyTracePath(const uint2 pixel, const uint2 frameDim)
 {
+    uint32_t idx = pixel.x + pixel.y * frameDim.x;
     float3 outColor = float3(0.f);
 
-    float3 primaryRayOrigin = gScene.camera.getPosition();
-    primaryRayOrigin = float3(probePos.xy, primaryRayOrigin.z);
-    const float3 primaryRayDir = normalize(probePos - primaryRayOrigin);
+    const float3 primaryRayOrigin = gScene.camera.getPosition();
+    const float3 primaryRayDir = getPrimaryRayDir(pixel, frameDim, gScene.camera);
 
     // 直接发射光线，移除使用 gbuffer的逻辑
     SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
@@ -408,12 +412,20 @@ float3 MyTracePath(const float3 probePos, const uint2 pixel, const uint2 frameDi
     for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
     {
         // compare (distance between hitpoint & rayOrigin) & (distance between lightprobe & rayOrigin)
-        bool hasRadiance = ((distance(rayData.origin.z, primaryRayOrigin) - distance(probePos, primaryRayOrigin)) <= (1e-3)) ? true : false;
-        if (depth == 1 && hasRadiance && (gIsCutting)) {
-            outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
-            break;
-        }
+        // bool hasRadiance = ((distance(rayData.origin.z, primaryRayOrigin) - distance(probePos, primaryRayOrigin)) <= (1e-3)) ? true : false;
+        // if (depth == 1 && hasRadiance && (gIsCutting)) {
+        //     outColor = kUseEnvBackground ? gScene.envMap.eval(primaryRayDir) : kDefaultBackgroundColor;
+        //     break;
+        // }
         traceScatterRay(rayData);
+        //hit our reflective object
+        // if(true == rayData.isHitObject)
+        // {
+        //     gOutputHitposes[idx].xyz = rayData.origin; 
+        //     gOutputRaydirs[idx].xyz = primaryRayDir;
+        //     break;
+        // }
+
     }
 
     // Store contribution from scatter ray.
@@ -552,6 +564,7 @@ void scatterTriangleMeshAnyHit(inout ScatterRayData rayData, BuiltInTriangleInte
     const uint materialID = gScene.getMaterialID(instanceID);
     if (gScene.materials.alphaTest(v, materialID, 0.f))
         IgnoreHit();
+    
 }
 
 //我确保本次撞击肯定是最近的时候就会调用这个shader
@@ -562,7 +575,16 @@ void scatterTriangleMeshClosestHit(inout ScatterRayData rayData, BuiltInTriangle
     triangleHit.instanceID = getGeometryInstanceID();
     triangleHit.primitiveIndex = PrimitiveIndex();
     triangleHit.barycentrics = attribs.barycentrics;
-    handleHit(HitInfo(triangleHit), rayData);
+    const uint materialID = gScene.getMaterialID(triangleHit.instanceID);
+    if(0 == materialID && 0 != rayData.pathLength)
+    {
+        // ray的第一次碰撞就撞到闪光球
+        rayData.isHitObject = true;
+    }
+    else
+    {
+        handleHit(HitInfo(triangleHit), rayData);
+    }
 }
 
 [shader("anyhit")]
@@ -663,21 +685,21 @@ void rayGen()
 {
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
-    uint halfX = frameDim.x / 2;
-    uint halfY = frameDim.y / 2;
-    // gOutputColor[pixel] = float4(float3(pixel.x / 1920.f), 1.f);//这里1920改成frameDim.x居然会全黑？
+    // uint halfX = frameDim.x / 2;
+    // uint halfY = frameDim.y / 2;
+    // // gOutputColor[pixel] = float4(float3(pixel.x / 1920.f), 1.f);//这里1920改成frameDim.x居然会全黑？
 
-    //float3 color = tracePath(pixel, frameDim);
-    float3 probePos;
-    probePos.z = gCurZ;
+    // //float3 color = tracePath(pixel, frameDim);
+    // float3 probePos;
+    // //probePos.z = gCurZ;
 
-    uint xOffset = (pixel.x <= halfX) ? (pixel.x - halfX) : (halfX - pixel.x);
-    int xSign = (pixel.x <= halfX) ? 1 : -1;
-    uint yOffset = (pixel.y <= halfY) ? (halfY - pixel.y) : (pixel.y - halfY);
-    int ySign = (pixel.y <= halfY) ? 1 : -1;
+    // uint xOffset = (pixel.x <= halfX) ? (pixel.x - halfX) : (halfX - pixel.x);
+    // int xSign = (pixel.x <= halfX) ? 1 : -1;
+    // uint yOffset = (pixel.y <= halfY) ? (halfY - pixel.y) : (pixel.y - halfY);
+    // int ySign = (pixel.y <= halfY) ? 1 : -1;
 
-    probePos.x = gSceneAABBCenter.x + xSign * xOffset * gIntervalX;
-    probePos.y = gSceneAABBCenter.y + ySign * yOffset * gIntervalY;
+    // probePos.x = gSceneAABBCenter.x + xSign * xOffset * gIntervalX;
+    // probePos.y = gSceneAABBCenter.y + ySign * yOffset * gIntervalY;
 
     // // cause pixel is unsigned int and is hard to change type
     // if (pixel.x <= 960 && pixel.y <= 540) {
@@ -698,7 +720,7 @@ void rayGen()
     // }
 
 
-    float3 color = MyTracePath(probePos, pixel, frameDim);
+    float3 color = MyTracePath(pixel, frameDim);
 
     gOutputColor[pixel] = float4(color, 1.f);
 }

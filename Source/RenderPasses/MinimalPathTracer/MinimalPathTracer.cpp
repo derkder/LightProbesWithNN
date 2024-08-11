@@ -46,10 +46,12 @@ const uint32_t kMaxPayloadSizeBytes = 72u;
 const uint32_t kMaxRecursionDepth = 2u;
 
 const char kInputViewDir[] = "viewW";
+const char kOutputHitposes[] = "hitposes";
+const char kOutputRaydirs[] = "raydirs";
 
 const ChannelList kInputChannels = {
     // clang-format off
-    //{ "vbuffer",        "gVBuffer",     "Visibility buffer in packed format" },
+    { "vbuffer",        "gVBuffer",     "Visibility buffer in packed format" },
     { kInputViewDir,    "gViewW",       "World-space view direction (xyz float format)", true /* optional */ },
     // clang-format on
 };
@@ -57,6 +59,8 @@ const ChannelList kInputChannels = {
 const ChannelList kOutputChannels = {
     // clang-format off
     { "color",          "gOutputColor", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputHitposes,  "gOutputHitposes", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputRaydirs,   "gOutputRaydirs", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     // clang-format on
 };
 
@@ -233,7 +237,7 @@ void MinimalPathTracer::execute(RenderContext* pRenderContext, const RenderData&
 
     mFrameCount++;
 
-    updateValue();
+    //updateValue();
 }
 
 void MinimalPathTracer::renderUI(Gui::Widgets& widget)

@@ -504,8 +504,9 @@ void myHandleHit(ShadingData sd, inout ScatterRayData rayData)
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
     //return float3(1.0f);
-    float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
-    //float3 mProbeLoc = float3(-0.240646, 0.020569, 0.082068);
+    // float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
+    //float3 mProbeLoc = float3(-0.085158, 0.4904897, -0.12996);
+    float3 mProbeLoc = float3(-0.240646, 0.020569, 0.082068);
     float radius = 0.005f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y;

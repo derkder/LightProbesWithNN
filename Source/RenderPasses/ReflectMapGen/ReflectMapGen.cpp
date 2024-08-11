@@ -58,6 +58,7 @@ const char kOutputSpecular[] = "specular";
 const char kOutputRoughEmmi[] = "roughnessemmisive";
 const char kOutputProbePoses[] = "probePoses";
 const char kOutputRayDirs[] = "rayDirs";
+const char kOutputHitNormals[] = "hitNormals";
 
 const ChannelList kInputChannels = {
     // clang-format off
@@ -73,7 +74,8 @@ const ChannelList kOutputChannels = {
     { kOutputSpecular,      "gOutputSpecular",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputRoughEmmi,      "gOutputRoughEmmi",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputProbePoses,      "gOutputProbePoses",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
-    { kOutputRayDirs,      "gOutputRayDirs",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float }
+    { kOutputRayDirs,      "gOutputRayDirs",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputHitNormals,      "gOutputHitNormals",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float }
     // clang-format on
 };
 
@@ -169,8 +171,12 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     if (0 == mFrameCount % frameCap)
     {
         //avoid overflow in slang
-        mSeed = generateRandomNumber(0, 210590); 
-        std::cout << "cur seed: " << mSeed << std::endl;
+        mSeed1 = generateRandomNumber(0, 210590); 
+        std::cout << "cur seed: " << mSeed1 << std::endl;
+        mSeed2 = generateRandomNumber(0, 210590); 
+        std::cout << "cur seed: " << mSeed2 << std::endl;
+        mSeed3 = generateRandomNumber(0, 210590); 
+        std::cout << "cur seed: " << mSeed3 << std::endl;
     }
 
 
@@ -260,7 +266,9 @@ void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& ren
     var["CB"]["gIntervalY"] = mIntervalY;
     var["CB"]["gCurZ"] = minZ + (maxZ - minZ) * sliceZPercent; // posZ of light probe
     var["CB"]["gIsCutting"] = mIsCutting;
-    var["CB"]["gSeed"] = mSeed;
+    var["CB"]["gSeed1"] = mSeed1;
+    var["CB"]["gSeed2"] = mSeed2;
+    var["CB"]["gSeed3"] = mSeed3;
     var["CB"]["kProbeLoc"] = mProbeLoc;
 
     // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.

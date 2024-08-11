@@ -106,7 +106,9 @@ private:
     uint probeNumsY = 1080;
     uint sampleNumsX = 1920;
     uint sampleNumsY = 1080;
-    uint mSeed;
+    uint mSeed1;
+    uint mSeed2;
+    uint mSeed3;
     uint frameCap = 3000;
     float minZ;
     float maxZ;

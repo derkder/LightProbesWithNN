@@ -20,9 +20,9 @@ def render_graph_ReflectMapGen():
     g.addEdge("AccumulatePass.output", "ToneMapper.src")
 
     g.markOutput("AccumulatePass.output")
-    g.markOutput("ReflectMapGen.diffuse")
-    g.markOutput("ReflectMapGen.specular")
-    g.markOutput("ReflectMapGen.roughnessemmisive")
+    # g.markOutput("ReflectMapGen.diffuse")
+    # g.markOutput("ReflectMapGen.specular")
+    # g.markOutput("ReflectMapGen.roughnessemmisive")
     g.markOutput("ReflectMapGen.probePoses")
     g.markOutput("ReflectMapGen.rayDirs")
     g.markOutput("ToneMapper.dst")
@@ -73,7 +73,7 @@ def modify_translation(scene_path, json_path, line_number, x_range, y_range, z_r
     print("Sphere position updated successfully")
 
 scene_path = "C:/Files/CGProject/NNLightProbes/MyScene/cornell_box.pyscene"
-output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/rawraw"
+output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/NormData/rawraw"
 # json_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/tempFullData718/raw/info.json"
 # scene_path = "D:/Projects/LightProbesWithNN/MyScene/cornell_box.pyscene"
 # output_path =  "D:/Projects/LightProbesWithNN/dumped_data/ShuffledData/raw"

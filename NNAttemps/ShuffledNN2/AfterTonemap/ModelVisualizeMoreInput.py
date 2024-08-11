@@ -83,15 +83,15 @@ def main():
     model.eval()
 
     # 生成光线
-    kprobeloc = np.array([0.16089, 0.28183, 0.08310])
+    # kprobeloc = np.array([0.16089, 0.28183, 0.08310])
     # kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
-    # kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
+    kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
     frame_dim = (1920, 1080)
     radius = 0.005
     hit_points, ray_dirs = generate_rays(frame_dim, radius, kprobeloc)
 
     # 加载和预处理EXR文件
-    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempp/A_SET"
+    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempp/C_SET"
     exr_paths = {
         "diffuse": os.path.join(batch_folder_path, "Mogwai.CollectData.diffuse.4001.exr")
     }
