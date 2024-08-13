@@ -78,6 +78,7 @@ Texture2D<float4> gViewW; // Optional
 RWTexture2D<float4> gOutputColor;
 RWTexture2D<float4> gOutputHitposes;
 RWTexture2D<float4> gOutputRaydirs;
+RWTexture2D<float4> gOutputNormals;
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -410,10 +411,11 @@ float3 myTracePath(const uint2 pixel, const uint2 frameDim)
             // if network use normal
             gOutputHitposes[pixel].xyz = rayData.origin; 
             gOutputRaydirs[pixel].xyz = primaryRayDir;
+            gOutputNormals[pixel].xyz = normalize(rayData.origin - probepos);
 
             // cur
-            gOutputHitposes[pixel].xyz = rayData.origin; 
-            gOutputRaydirs[pixel].xyz = - normalize(probepos - rayData.origin);
+            // gOutputHitposes[pixel].xyz = rayData.origin; 
+            // gOutputRaydirs[pixel].xyz = - normalize(probepos - rayData.origin);
             
             break;
         }

@@ -36,15 +36,15 @@ def generate_rays(frame_dim, radius, kProbeLoc):
             # ray_dir = - ray_dir / np.linalg.norm(ray_dir)
             ray_dir = ray_dir / np.linalg.norm(ray_dir) # 难道我训练的时候ray_dir的方向反了？好像是输入的时候方向搞反了，也不一定，好像就是反了
             hit_points.append(kProbeLoc)
-            ray_dirs.append(ray_dir)
+            ray_dirs.append(-ray_dir)
     return np.array(hit_points), np.array(ray_dirs)
 
 # Load Data
 # kprobeloc = np.array([0.16089, 0.28183, 0.08310])
-# kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
-kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
-model_file = "NNAttemps/ShuffledNN2/models/final_light_probe_model_morePNG.pth"
-output_path = "NNAttemps/ShuffledNN2/out_imgs/output00_10.exr"
+kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
+# kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
+model_file = "NNAttemps/ShuffledNN2/models/colab/final_light_probe_model_morePNG.pth"
+output_path = "NNAttemps/ShuffledNN2/out_imgs/output00_88.exr"
 frame_dim = (1920, 1080)
 radius = 0.005
 

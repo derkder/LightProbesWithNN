@@ -6,6 +6,11 @@ import Imath
 import os
 from PIL import Image
 
+
+def linear_to_srgb(image):
+    return np.where(image <= 0.0031308, image * 12.92, 1.055 * (image ** (1/2.4)) - 0.055)
+
+
 # Function to convert sRGB to linear color space
 def srgb_to_linear(image):
     return np.where(image <= 0.04045, image / 12.92, ((image + 0.055) / 1.055) ** 2.4)
@@ -66,7 +71,7 @@ def png_to_exr(png_path, exr_path):
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(6, 128)
+        self.fc1 = nn.Linear(9, 128)
         self.fc2 = nn.Linear(128, 256)
         self.fc3 = nn.Linear(256, 128)
         self.fc4 = nn.Linear(128, 3)
@@ -81,17 +86,18 @@ class MLP(nn.Module):
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MLP(input_dim=6, output_dim=3).to(device)
-    model.load_state_dict(torch.load("NNAttemps/ShuffledNN2/models/final_light_probe_model_morePNG.pth"))
+    model.load_state_dict(torch.load("NNAttemps/ShuffledNN2/models/colab/final_light_probe_model_NORMALPNG (5).pth"))
     model.eval()
 
-    # 生成光线
+    # 生成光线model_file = "NNAttemps/ShuffledNN2/models/colab/final_light_probe_model_NORMALPNG (5).pth"
     frame_dim = (1920, 1080)
 
     # 加载和预处理EXR文件
-    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/frame_0000"
+    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/frame_0001"
     exr_paths = {
         "hitposes": os.path.join(batch_folder_path, "Mogwai.NetworkPass.hitposes.3000.exr"),
-        "raydirs": os.path.join(batch_folder_path, "Mogwai.NetworkPass.raydirs.3000.exr")
+        "raydirs": os.path.join(batch_folder_path, "Mogwai.NetworkPass.raydirs.3000.exr"),
+        "normals": os.path.join(batch_folder_path, "Mogwai.NetworkPass.normals.3000.exr"),
     }
     
     images = {}
@@ -102,9 +108,9 @@ def main():
     # images["raydirs"] *= -1.0
     # Prepare input data
     input_data = np.concatenate(
-        [images["hitposes"], images["raydirs"]], 
+        [images["hitposes"], images["raydirs"], images["normals"]], 
         axis=1
-    ).reshape(-1, 6)
+    ).reshape(-1, 9)
     input_tensor = torch.tensor(input_data, dtype=torch.float32).to(device)
 
     # 处理模型输出
@@ -119,6 +125,7 @@ def main():
     # 合并输出并重塑为图像维度
     output_img = np.concatenate(output_img, axis=0)
     output_img = output_img.reshape((frame_dim[1], frame_dim[0], 3))
+    output_img = srgb_to_linear(output_img)
 
     # 读取并转换目标PNG文件为EXR
     target_png_path = os.path.join(batch_folder_path, "Mogwai.ToneMapper.dst.3000.png")  # 请替换为你的目标PNG文件路径
@@ -128,6 +135,7 @@ def main():
 
     # 应用mask，仅保留有颜色的部分
     mask = np.any(np.abs(output_img - 0) >= 0.1, axis=-1)
+    output_img[mask] = linear_to_srgb(output_img[mask])
     target_img[mask] = output_img[mask]
 
     # 保存最终结果为EXR格式

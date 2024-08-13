@@ -530,7 +530,8 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
         {
             VertexData v = {};
             v.posW = mProbeLoc;
-            v.normalW = -primaryRayDir;
+            //v.normalW = -primaryRayDir;
+            v.normalW = normalize(float3(1., 2., 3.));
             v.faceNormalW = v.normalW;
             v.texC = float2(0.1, 0.1);
             //v.tangent

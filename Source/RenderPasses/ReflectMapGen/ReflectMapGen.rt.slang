@@ -608,7 +608,7 @@ float3 MyTracePathRand(const uint2 pixel, const uint2 frameDim, float3 dir, floa
             v.coneTexLODValue = 0;
             let lod = ExplicitLodTextureSampler(0.f);
             uint matID = 0;
-            ShadingData sdTemp = gScene.materials.prepareShadingData(v, matID/*materialID*/, -primaryRayDir, lod/*lod*/);
+            ShadingData sdTemp = gScene.materials.prepareShadingData(v, matID/*materialID*/, dir, lod/*lod*/); // 这里居然不是-dir
             myHandleHit(sdTemp, rayData);
         }
         else

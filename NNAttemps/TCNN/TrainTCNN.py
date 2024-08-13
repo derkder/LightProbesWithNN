@@ -60,8 +60,6 @@ class CustomDataset(Dataset):
         self.raydirs = np.concatenate(self.raydirs, axis=0)
         self.colors = np.concatenate(self.colors, axis=0)
 
-        # print(f"Loaded {len(self.hitposes)} data points from {folder_path}.")
-
     def __len__(self):
         return len(self.hitposes)
 
@@ -84,12 +82,17 @@ class TinyCUDANNModel(nn.Module):
                 "otype": "Composite",
                 "nested": [
                     {
+                        "otype": "HashGrid",
                         "n_dims_to_encode": 3,
-                        "otype": "identity"
+                        "n_levels": 8,
+                        "n_features_per_level": 4,
+                        "log2_hashmap_size": 19,
+                        "base_resolution": 16
                     },
                     {
+                        "otype": "SphericalHarmonics",
                         "n_dims_to_encode": 3,
-                        "otype": "identity"
+                        "degree": 2
                     }
                 ]
             },
@@ -102,18 +105,27 @@ class TinyCUDANNModel(nn.Module):
         )
 
     def forward(self, x):
-        # 通过神经网络进行处理
         return self.network(x)
 
     def serialize(self):
+        serialized_data = self.network.serialize()
+        n_params = sum(p.numel() for p in self.parameters())
+        params_binary = {
+            "bytes": list(serialized_data),
+            "subtype": None
+        }
+        params_type = "__half"  # 假设模型的参数类型是半精度浮点数
+
         model_dict = {
-            "network": self.network.serialize()
+            "n_params": n_params,
+            "params_binary": params_binary,
+            "params_type": params_type
         }
         return json.dumps(model_dict)
 
     def deserialize(self, json_str):
         model_dict = json.loads(json_str)
-        self.network.deserialize(model_dict["network"])
+        self.network.deserialize(bytes(model_dict["params_binary"]["bytes"]))
 
 def train(model, device, train_loader, criterion, optimizer, scaler, epoch, accumulation_steps=4):
     model.train()
@@ -124,6 +136,7 @@ def train(model, device, train_loader, criterion, optimizer, scaler, epoch, accu
     print(f"Total batches per epoch: {total_batches}")
     
     for batch_idx, (input_data, target) in enumerate(train_loader):
+        # print(batch_idx)
         input_data, target = input_data.to(device), target.to(device)
         
         optimizer.zero_grad()
@@ -137,8 +150,6 @@ def train(model, device, train_loader, criterion, optimizer, scaler, epoch, accu
 
         train_loss += loss.item()
         torch.cuda.empty_cache()
-        
-        # print(f"Batch {batch_idx + 1}/{total_batches}")
 
     train_loss /= len(train_loader)
     return train_loss
@@ -187,18 +198,10 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
     print(device)
     
-    # batch_size = 4
-    # train_limit = 320
-    # val_limit = 40
-    # test_limit = 40
-    # batch_size = 16 # 之前跑巨久的原因
-    # work computer
-    # batch_size =  1048576 # 1024 * 1024, NRC才16384一个batch，每帧可以跑4个batch
-    # my alien
-    batch_size =  52488
-    train_limit = 160
-    val_limit = 20
-    test_limit = 20
+    batch_size =  104976
+    train_limit = 80
+    val_limit = 10
+    test_limit = 10
     
     train_loader, val_loader, test_loader = create_data_loaders(train_path, val_path, test_path, batch_size=batch_size, train_limit=train_limit, val_limit=val_limit, test_limit=test_limit)
     print("Data loaded")
@@ -252,9 +255,9 @@ def main():
     plt.show()
 
 final_model_path = "NNAttemps/ShuffledNN2/models/final_light_probe_model_tcnn.pth"
-train_path = "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/raw/train"
-val_path = "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/raw/val"
-test_path = "C:/Files/CGProject/NNLightProbes/dumped_data/ShuffledData/raw/test"
+train_path = "C:/Files/CGProject/NNLightProbes/dumped_data/AllData/rawraw/ValidData/train"
+val_path = "C:/Files/CGProject/NNLightProbes/dumped_data/AllData/rawraw/ValidData/val"
+test_path = "C:/Files/CGProject/NNLightProbes/dumped_data/AllData/rawraw/ValidData/test"
 
 if __name__ == '__main__':
     main()

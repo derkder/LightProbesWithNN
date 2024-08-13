@@ -46,6 +46,7 @@ const uint32_t kMaxRecursionDepth = 2u;
 const char kInputViewDir[] = "viewW";
 const char kOutputHitposes[] = "hitposes";
 const char kOutputRaydirs[] = "raydirs";
+const char kOutputNormals[] = "normals";
 
 const ChannelList kInputChannels = {
     // clang-format off
@@ -59,6 +60,7 @@ const ChannelList kOutputChannels = {
     { "color",          "gOutputColor", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputHitposes,  "gOutputHitposes", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputRaydirs,   "gOutputRaydirs", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputNormals,   "gOutputNormals", "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     // clang-format on
 };
 

@@ -25,6 +25,7 @@ def render_graph_ReflectMapGen():
     # g.markOutput("ReflectMapGen.roughnessemmisive")
     g.markOutput("ReflectMapGen.probePoses")
     g.markOutput("ReflectMapGen.rayDirs")
+    g.markOutput("ReflectMapGen.hitNormals")
     g.markOutput("ToneMapper.dst")
     return g
 
@@ -83,7 +84,7 @@ n_collect_frames = 100000000
 n_match_frames = 3000
 n_cap_offset = 10
 # n_match_frames = 1000
-n_sample_count = 0
+n_sample_count = 404
 
 ReflectMapGen = render_graph_ReflectMapGen()
 try: m.addGraph(ReflectMapGen)

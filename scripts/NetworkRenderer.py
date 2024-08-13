@@ -19,6 +19,7 @@ def render_graph_NetworkRenderer():
     g.markOutput("AccumulatePass.output")
     g.markOutput("NetworkPass.hitposes")
     g.markOutput("NetworkPass.raydirs")
+    g.markOutput("NetworkPass.normals")
     g.markOutput("ToneMapper.dst")
     return g
 
@@ -30,7 +31,7 @@ n_collect_frames = 10000
 n_match_frames = 3000
 n_cap_offset = 1
 # n_match_frames = 1000
-n_sample_count = 0
+n_sample_count = 1
 scene_path = "C:/Projects/Graphics/FalcorTCNN/MyScene/cornell_box.pyscene"
 output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw"
 

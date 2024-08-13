@@ -160,11 +160,12 @@ void ReflectMapGen::prepareResolve(const RenderData& renderData)
 
 int generateRandomNumber(int min, int max)
 {
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
-    std::default_random_engine generator(std::rand());
+    static unsigned int seed = static_cast<unsigned int>(std::time(nullptr));
+    std::default_random_engine generator(seed++);
     std::uniform_int_distribution<int> distribution(min, max);
     return distribution(generator);
 }
+
 
 void ReflectMapGen::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
