@@ -32,7 +32,7 @@ n_match_frames = 3000
 n_cap_offset = 1
 # n_match_frames = 1000
 n_sample_count = 1
-scene_path = "C:/Projects/Graphics/FalcorTCNN/MyScene/cornell_box.pyscene"
+scene_path = "C:/Projects/Graphics/FalcorTCNN/media/test_scenes/rabbit_box.pyscene"
 output_path =  "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw"
 
 m.loadScene(scene_path)

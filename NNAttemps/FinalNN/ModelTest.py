@@ -85,7 +85,7 @@ def main():
     exr_paths = {
         "hitposes": os.path.join(batch_folder_path, "Mogwai.NetworkPass.hitposes.3000.exr"),
         "raydirs": os.path.join(batch_folder_path, "Mogwai.NetworkPass.raydirs.3000.exr"),
-        "normals": os.path.join(batch_folder_path, "Mogwai.NetworkPass.normals.3000.exr"),
+        "normals": os.path.join(batch_folder_path, "Mogwai.NetworkPass.normals1.3000.exr"),
     }
     
     images = {}
@@ -128,12 +128,12 @@ def main():
     target_img[mask] = output_img[mask]
 
     # 保存最终结果为EXR格式 
-    save_exr("NNAttemps/ShuffledNN2/out_imgs/output00_90_masked.exr", target_img)
+    save_exr("NNAttemps/FinalNN/output/output00_90_masked.exr", target_img)
 
     # 生成仅包含mask部分的图像并保存为EXR格式
     mask_only_img = np.zeros_like(target_img)
     mask_only_img[mask] = output_img[mask]
-    save_exr("NNAttemps/ShuffledNN2/out_imgs/output00_90_mask_only.exr", mask_only_img)
+    save_exr("NNAttemps/FinalNN/output/output00_90_mask_only.exr", mask_only_img)
 
 if __name__ == '__main__':
     main()

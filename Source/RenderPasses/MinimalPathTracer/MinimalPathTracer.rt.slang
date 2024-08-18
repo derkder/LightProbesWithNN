@@ -190,7 +190,7 @@ ShadingData loadShadingData(const HitInfo hit, const float3 rayOrigin, const flo
 #endif
 
     ShadingData sd = gScene.materials.prepareShadingData(v, materialID, -rayDir, lod);
-
+    sd.metallic = 1.;
     return sd;
 }
 

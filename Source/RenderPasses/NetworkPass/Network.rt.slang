@@ -113,6 +113,7 @@ struct ScatterRayData
     bool isHitObject;
     float3 direction; ///< Next path segment direction.
     float3 myHitPoint;
+    float3 normal;
 
     SampleGenerator sg; ///< Per-ray state for the sample generator (up to 16B).
 
@@ -338,7 +339,7 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     // Load shading data.
     ShadingData sd = loadShadingData(hit, rayData.origin, rayData.direction, lod);
     rayData.myHitPoint = sd.posW;
-
+    rayData.normal = sd.frontFacing ? sd.faceN : -sd.faceN; 
     // Create material instance.
     let mi = gScene.materials.getMaterialInstance(sd, lod);
 
@@ -411,7 +412,8 @@ float3 myTracePath(const uint2 pixel, const uint2 frameDim)
             // if network use normal
             gOutputHitposes[pixel].xyz = rayData.origin; 
             gOutputRaydirs[pixel].xyz = primaryRayDir;
-            gOutputNormals[pixel].xyz = normalize(rayData.origin - probepos);
+            gOutputNormals[pixel].xyz = rayData.normal;
+            //gOutputNormals[pixel].xyz = normalize(rayData.origin - probepos);
 
             // cur
             // gOutputHitposes[pixel].xyz = rayData.origin; 

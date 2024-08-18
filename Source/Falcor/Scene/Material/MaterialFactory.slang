@@ -69,6 +69,12 @@ extension MaterialSystem
         return material.setupMaterialInstance(this, sd, lod, hints);
     }
 
+    // IMaterialInstance myGetMaterialInstance<L:ITextureSampler>(const ShadingData sd, L lod, const uint hints = (uint)MaterialInstanceHints::None)
+    // {
+    //     let material = getMaterial(sd.materialID);
+    //     return material.mySetupMaterialInstance(this, sd, lod, hints, 1., 0.);
+    // }
+
     /** Prepares shading data at a hit point.
         \param[in] v Interpolated vertex data.
         \param[in] materialID Material ID at the hit.

@@ -861,40 +861,40 @@ void rayGen()
 
     //----------------
 
-    // uint2 pixel = DispatchRaysIndex().xy;
-    // uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+    uint2 pixel = DispatchRaysIndex().xy;
+    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
 
-    // float3 dir;
-    // float3 probeExtend;
-    // float3 probePos;
+    float3 dir;
+    float3 probeExtend;
+    float3 probePos;
 
-    // if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
-    // {
-    //     //uint temp = gFrameCount / frameCap + seed; // 如果没加seed，每次打开程序，种子都和上一次打开是重复的
-    //     dir = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed);
-    //     probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed);
-    //     probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
-    //     // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
-    //     gOutputProbePoses[pixel] = float4(probePos, 1.0); 
-    //     gOutputRayDirs[pixel] = - float4(dir, 1.0);
-    // }
-    // else
-    // {
-    //     dir = gOutputRayDirs[pixel].xyz;
-    //     probePos = gOutputProbePoses[pixel].xyz;
-    // }
-    // //dir = float3(-0.59131, -0.60645, -0.53174);
-    // //probePos = float3(-0.24109, 0.27686, -0.15479);
-    // float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
-    // gOutputColor[pixel] = float4(color, 1.f);
+    if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
+    {
+        //uint temp = gFrameCount / frameCap + seed; // 如果没加seed，每次打开程序，种子都和上一次打开是重复的
+        dir = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed);
+        probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed);
+        probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
+        // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
+        gOutputProbePoses[pixel] = float4(probePos, 1.0); 
+        gOutputRayDirs[pixel] = - float4(dir, 1.0);
+    }
+    else
+    {
+        dir = gOutputRayDirs[pixel].xyz;
+        probePos = gOutputProbePoses[pixel].xyz;
+    }
+    //dir = float3(-0.59131, -0.60645, -0.53174);
+    //probePos = float3(-0.24109, 0.27686, -0.15479);
+    float3 color = MyTracePathRand(pixel, frameDim, dir, probePos);
+    gOutputColor[pixel] = float4(color, 1.f);
 
     //----------------
     
-    //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
-    uint2 pixel = DispatchRaysIndex().xy;
-    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
-    float3 color = MyTracePathMap(pixel, frameDim);
-    gOutputColor[pixel] = float4(color, 1.f);
+    // //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
+    // uint2 pixel = DispatchRaysIndex().xy;
+    // uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+    // float3 color = MyTracePathMap(pixel, frameDim);
+    // gOutputColor[pixel] = float4(color, 1.f);
 
     //----------------
 

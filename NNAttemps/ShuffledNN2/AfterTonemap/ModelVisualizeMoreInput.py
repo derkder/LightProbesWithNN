@@ -74,7 +74,7 @@ def main():
     
     # 尝试加载模型参数，忽略尺寸不匹配的层
     try:
-        state_dict = torch.load("NNAttemps/ShuffledNN2/models/final_light_probe_model_PNGDiffuseWeightedLoss.pth")
+        state_dict = torch.load("NNAttemps/ShuffledNN2/models/final_light_probe_model_morePNGDiffuse2.pth")
         state_dict = {k: v for k, v in state_dict.items() if k in model.state_dict() and model.state_dict()[k].shape == v.shape}
         model.load_state_dict(state_dict, strict=False)
     except RuntimeError as e:
@@ -84,14 +84,14 @@ def main():
 
     # 生成光线
     # kprobeloc = np.array([0.16089, 0.28183, 0.08310])
-    # kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
-    kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
+    kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
+    # kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
     frame_dim = (1920, 1080)
     radius = 0.005
     hit_points, ray_dirs = generate_rays(frame_dim, radius, kprobeloc)
 
     # 加载和预处理EXR文件
-    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempp/C_SET"
+    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/tempp/B_SET"
     exr_paths = {
         "diffuse": os.path.join(batch_folder_path, "Mogwai.CollectData.diffuse.4001.exr")
     }

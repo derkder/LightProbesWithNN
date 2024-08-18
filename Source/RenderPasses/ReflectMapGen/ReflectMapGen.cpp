@@ -53,12 +53,10 @@ const uint32_t kMaxRecursionDepth = 2u;
 
 const char kInputViewDir[] = "viewW";
 const char kOutputColor[] = "color";
-const char kOutputDiffuse[] = "diffuse";
-const char kOutputSpecular[] = "specular";
-const char kOutputRoughEmmi[] = "roughnessemmisive";
 const char kOutputProbePoses[] = "probePoses";
 const char kOutputRayDirs[] = "rayDirs";
 const char kOutputHitNormals[] = "hitNormals";
+const char kOutputHitMaterials[] = "hitMaterials";
 
 const ChannelList kInputChannels = {
     // clang-format off
@@ -70,12 +68,10 @@ const ChannelList kInputChannels = {
 const ChannelList kOutputChannels = {
     // clang-format off
     { kOutputColor,          "gOutputColor",      "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
-    { kOutputDiffuse,        "gOutputDiffuse",    "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
-    { kOutputSpecular,      "gOutputSpecular",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
-    { kOutputRoughEmmi,      "gOutputRoughEmmi",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputProbePoses,      "gOutputProbePoses",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
     { kOutputRayDirs,      "gOutputRayDirs",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
-    { kOutputHitNormals,      "gOutputHitNormals",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float }
+    { kOutputHitNormals,      "gOutputHitNormals",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float },
+    { kOutputHitMaterials,      "gOutputHitMaterials",  "Output color (sum of direct and indirect)", false, ResourceFormat::RGBA32Float }
     // clang-format on
 };
 

@@ -89,12 +89,10 @@ Texture2D<float4> gViewW; // Optional
 
 // Outputs
 RWTexture2D<float4> gOutputColor;
-RWTexture2D<float4> gOutputDiffuse;
-RWTexture2D<float4> gOutputSpecular;
-RWTexture2D<float4> gOutputRoughEmmi;
 RWTexture2D<float4> gOutputProbePoses;
 RWTexture2D<float4> gOutputRayDirs;
 RWTexture2D<float4> gOutputHitNormals;
+RWTexture2D<float4> gOutputHitMaterials;
 
 
 // Static configuration based on defines set from the host.
@@ -438,6 +436,7 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
+// 只有第一次碰撞会调用，在处理数据阶段，所有第一次碰撞都要特殊处理附上属性
 void myHandleHit(ShadingData sd, inout ScatterRayData rayData)
 {
     let lod = ExplicitLodTextureSampler(0.f);
@@ -555,10 +554,10 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
             if (1 == depth)
             {
                 radiance1 = rayData.radiance - radiance0;   
-                gOutputDiffuse[pixel].xyz = rayData.diffuse;
-                gOutputSpecular[pixel].xyz = rayData.specular;
-                gOutputRoughEmmi[pixel].x = rayData.roughness;
-                gOutputRoughEmmi[pixel].y = rayData.isEmissive;
+                // gOutputDiffuse[pixel].xyz = rayData.diffuse;
+                // gOutputSpecular[pixel].xyz = rayData.specular;
+                // gOutputRoughEmmi[pixel].x = rayData.roughness;
+                // gOutputRoughEmmi[pixel].y = rayData.isEmissive;
             } 
         }
         
@@ -568,7 +567,7 @@ float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
     return outColor;
 }
 
-float3 MyTracePathRand(const uint2 pixel, const uint2 frameDim, float3 dir, float3 probePos, float3 hitNorm)
+float3 MyTracePathRand(const uint2 pixel, const uint2 frameDim, float3 dir, float3 probePos, float3 hitNorm, float3 material)
 {
     //return float3(1.0f);
     //float3 mProbeLoc = float3(0.26089, 0.48183, 0.08310);
@@ -609,6 +608,9 @@ float3 MyTracePathRand(const uint2 pixel, const uint2 frameDim, float3 dir, floa
             let lod = ExplicitLodTextureSampler(0.f);
             uint matID = 0;
             ShadingData sdTemp = gScene.materials.prepareShadingData(v, matID/*materialID*/, dir, lod/*lod*/); // 这里居然不是-dir
+            sdTemp.isCustomMat = true;
+            sdTemp.metallic = material.x;
+            sdTemp.roughness = material.y;
             myHandleHit(sdTemp, rayData);
         }
         else
@@ -617,10 +619,10 @@ float3 MyTracePathRand(const uint2 pixel, const uint2 frameDim, float3 dir, floa
             if (1 == depth)
             {
                 radiance1 = rayData.radiance - radiance0;   
-                gOutputDiffuse[pixel].xyz = rayData.diffuse;
-                gOutputSpecular[pixel].xyz = rayData.specular;
-                gOutputRoughEmmi[pixel].x = rayData.roughness;
-                gOutputRoughEmmi[pixel].y = rayData.isEmissive;
+                // gOutputDiffuse[pixel].xyz = rayData.diffuse;
+                // gOutputSpecular[pixel].xyz = rayData.specular;
+                // gOutputRoughEmmi[pixel].x = rayData.roughness;
+                // gOutputRoughEmmi[pixel].y = rayData.isEmissive;
             } 
         }
         
@@ -870,7 +872,7 @@ void rayGen()
     float3 probeExtend;
     float3 probePos;
     float3 hitNorm;
-    float3 tangent;
+    float3 material;
 
     if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
     {
@@ -878,6 +880,7 @@ void rayGen()
         dir = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed1); // reversed indir
         probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed1);
         hitNorm = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed2);
+        material = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed3) + 0.5;
         // tangent = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed3);
         if(dot(hitNorm, dir) < 0)
         {
@@ -888,6 +891,7 @@ void rayGen()
         gOutputProbePoses[pixel] = float4(probePos, 1.0); 
         gOutputRayDirs[pixel] = - float4(dir, 1.0);
         gOutputHitNormals[pixel] = float4(hitNorm, 1.0);
+        gOutputHitMaterials[pixel] = float4(material, 1.0);
         // gOutputTangents[pixel] = float4(tangent, 1.0);
     }
     else
@@ -895,11 +899,12 @@ void rayGen()
         dir = - gOutputRayDirs[pixel].xyz;
         probePos = gOutputProbePoses[pixel].xyz;
         hitNorm = gOutputHitNormals[pixel].xyz;
+        material = gOutputHitMaterials[pixel].xyz;
         // tangent = gOutputTangents[pixel].xyz;
     }
     //dir = float3(-0.59131, -0.60645, -0.53174);
     //probePos = float3(-0.24109, 0.27686, -0.15479);
-    float3 color = MyTracePathRand(pixel, frameDim, dir, probePos, hitNorm);
+    float3 color = MyTracePathRand(pixel, frameDim, dir, probePos, hitNorm, material);
     gOutputColor[pixel] = float4(color, 1.f);
 
     //----------------

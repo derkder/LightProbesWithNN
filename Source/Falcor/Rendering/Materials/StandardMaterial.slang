@@ -129,6 +129,100 @@ struct StandardMaterial : MaterialBase, IMaterial
         d.hasEntryPointVolumeProperties = data.getHasEntryPointVolumeProperties();
         d.hasSigmaSGreaterZero = (any(data.volumeScattering) > 0.f);
 
+        if(true == sd.isCustomMat)
+        {
+            d.metallic = sd.metallic;
+            d.roughness = sd.roughness;
+        }
+
+        return StandardMaterialInstance(sf, d, emission);
+    }
+
+    StandardMaterialInstance MySetupMaterialInstance(const MaterialSystem ms, const ShadingData sd, const ITextureSampler lod, const uint hints, float met, float rough)
+    {
+        SamplerState s = ms.getTextureSampler(header.getDefaultTextureSamplerID());
+
+        StandardBSDFData d = {};
+
+        float16_t IoR = header.getIoR();
+        d.eta = sd.frontFacing ? (sd.IoR / IoR) : (IoR / sd.IoR);
+        d.diffuseTransmission = data.diffuseTransmission;
+        d.specularTransmission = data.specularTransmission;
+        if (d.diffuseTransmission > 0.f || d.specularTransmission > 0.f)
+        {
+            d.transmission = ms.sampleTexture(data.texTransmission, s, sd.uv, float4(data.transmission, 0.f), lod).rgb;
+        }
+
+        // Calculate the specular reflectance for dielectrics from the IoR, as in the Disney BSDF [Burley 2015].
+        // UE4 uses 0.08 multiplied by a default specular value of 0.5, hence F0=0.04 as default. The default IoR=1.5 gives the same result.
+        float f = (IoR - 1.f) / (IoR + 1.f);
+        float F0 = f * f;
+
+        // Sample base color.
+        const float3 baseColor = ms.sampleTexture(data.texBaseColor, s, sd.uv, data.baseColor, lod).rgb;
+
+        // Sample the specular texture.
+        // Depending on the shading model this encodes the material parameters differently.
+        const float4 spec = ms.sampleTexture(data.texSpecular, s, sd.uv, data.specular, lod);
+
+#if MATERIAL_SYSTEM_HAS_SPEC_GLOSS_MATERIALS
+        if (data.getShadingModel() == ShadingModel::MetalRough)
+#endif
+        {
+            // G - Roughness; B - Metallic
+            d.diffuse = lerp(baseColor, float3(0), spec.b);
+            d.specular = lerp(float3(F0), baseColor, spec.b);
+            d.roughness = spec.g;
+            d.metallic = spec.b;
+        }
+#if MATERIAL_SYSTEM_HAS_SPEC_GLOSS_MATERIALS
+        else // ShadingModel::SpecGloss
+        {
+            d.diffuse = baseColor;
+            d.specular = spec.rgb;
+            d.roughness = 1 - spec.a;
+            d.metallic = getMetallic(d.diffuse, d.specular);
+        }
+#endif
+
+#if defined(SCENE_DIFFUSE_ALBEDO_MULTIPLIER)
+        // DEMO21
+        if (SCENE_DIFFUSE_ALBEDO_MULTIPLIER != 1.f)
+        {
+            d.diffuse = saturate(d.diffuse * SCENE_DIFFUSE_ALBEDO_MULTIPLIER);
+        }
+#endif
+
+        // Compute final shading frame.
+        ShadingFrame sf = sd.frame;
+        if (isNormalMappingEnabled(hints))
+        {
+            float3 encodedNormal = ms.sampleTexture(data.texNormalMap, s, sd.uv, float4(0.f), lod).rgb;
+            sf = computeShadingFrameFromNormalMap(sd, data.getNormalMapType(), encodedNormal);
+        }
+        flipShadingNormal(sd, sf);
+        if (isAdjustShadingNormalEnabled(hints))
+        {
+            adjustShadingNormal(sd, sf);
+        }
+
+        // Sample the emissive texture.
+        // The standard material supports uniform emission over the hemisphere.
+        // Note that the material is only emissive on the front-facing side.
+        float3 emission = {};
+        if (sd.frontFacing)
+        {
+            emission = ms.sampleTexture(data.texEmissive, s, sd.uv, float4(data.emissive, 1), lod).rgb * data.emissiveFactor;
+        }
+
+        d.volumeAnsiotropy = data.volumeAnisotropy;
+        d.volumeScattering = data.volumeScattering;
+        d.hasEntryPointVolumeProperties = data.getHasEntryPointVolumeProperties();
+        d.hasSigmaSGreaterZero = (any(data.volumeScattering) > 0.f);
+
+        d.metallic = met;
+        d.roughness = rough;
+
         return StandardMaterialInstance(sf, d, emission);
     }
 
