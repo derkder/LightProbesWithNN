@@ -113,20 +113,20 @@ except NameError: pass
 
 
 # ----------------------------------
+# 收集数据用的
+# m.loadScene(scene_path)
+# for i in range(n_collect_frames):
+#     # if(0 == i):
+#     #     i += 1 # 防止第一帧被保存
 
-m.loadScene(scene_path)
-for i in range(n_collect_frames):
-    # if(0 == i):
-    #     i += 1 # 防止第一帧被保存
-
-    renderFrame()
-    if 0 == ((i + n_cap_offset) % n_match_frames):
-        file_name_format = "frame_{:04d}".format(n_sample_count)
-        outputDir = f"{output_path}/{file_name_format}"
-        os.makedirs(outputDir, exist_ok=True)
-        m.frameCapture.outputDir = outputDir
-        m.frameCapture.capture()
-        n_sample_count += 1
+#     renderFrame()
+#     if 0 == ((i + n_cap_offset) % n_match_frames):
+#         file_name_format = "frame_{:04d}".format(n_sample_count)
+#         outputDir = f"{output_path}/{file_name_format}"
+#         os.makedirs(outputDir, exist_ok=True)
+#         m.frameCapture.outputDir = outputDir
+#         m.frameCapture.capture()
+#         n_sample_count += 1
 
 # ----------------------------------
 

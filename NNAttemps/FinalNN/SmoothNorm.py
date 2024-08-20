@@ -3,8 +3,8 @@ import Imath
 import numpy as np
 import cv2
 
-normal_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/frame_0001/Mogwai.NetworkPass.normals.3000.exr"
-smooth_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/frame_0001/Mogwai.NetworkPass.normals1.3000.exr"
+normal_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/cornell_scene/Mogwai.NetworkPass.normals.3000.exr"
+smooth_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/cornell_scene/Mogwai.NetworkPass.normals1.3000.exr"
 
 # Function to read EXR file
 def read_exr(file_path):
@@ -20,8 +20,22 @@ def read_exr(file_path):
     exr_file.close()
     return size, stacked_rgb
 
-# Function to smooth normals with multiple passes
-def smooth_normals(normals, kernel_size=7, passes=5):
+
+# used for rabbit
+# def smooth_normals(normals, kernel_size=7, passes=5):
+#     smoothed_normals = normals.copy()
+    
+#     for _ in range(passes):
+#         smoothed_normals = cv2.GaussianBlur(smoothed_normals, (kernel_size, kernel_size), 0)
+    
+#     # Normalize the normals
+#     norm = np.linalg.norm(smoothed_normals, axis=-1, keepdims=True)
+#     smoothed_normals /= np.clip(norm, 1e-8, None)
+    
+#     return smoothed_normals
+
+# used for sphere
+def smooth_normals(normals, kernel_size=15, passes=5):
     smoothed_normals = normals.copy()
     
     for _ in range(passes):

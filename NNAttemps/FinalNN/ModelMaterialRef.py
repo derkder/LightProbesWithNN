@@ -43,8 +43,9 @@ def generate_rays(frame_dim, radius, kProbeLoc):
     return np.array(hit_points), np.array(ray_dirs), np.array(normals), np.array(materials)
 
 # Load Data
+kprobeloc = np.array([0.16089, 0.28183, 0.08310])
 # kprobeloc = np.array([-0.240646, 0.020569, 0.082068])
-kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
+# kprobeloc = np.array([-0.085158, 0.4904897, -0.12996])
 
 model_file = "NNAttemps/FinalNN/models/final_light_probe_model_MATERIALPNGBETTER.pth"
 output_path = "NNAttemps/FinalNN/output/output00_77.exr"

@@ -34,8 +34,8 @@ smallBox.roughness = 0.5
 
 mySphere = StandardMaterial('My Sphere')
 mySphere.baseColor = float4(0.5, 0.5, 0.5, 1.0)
-mySphere.roughness = 0.0
-mySphere.metallic = 1.0
+mySphere.roughness = 1.0
+mySphere.metallic = 0.0
 
 # Create geometry
 
@@ -45,7 +45,7 @@ sphereMesh = TriangleMesh.createSphere()
 
 # Create mesh instances
 sceneBuilder.addMeshInstance(
-    sceneBuilder.addNode('My Sphere', Transform(scaling=float3(0.0001, 0.0001, 0.0001), translation=float3(-0.093, 0.165, -0.071), rotationEulerDeg=float3(0, -45, 0))),
+    sceneBuilder.addNode('My Sphere', Transform(scaling=float3(0.0001, 0.0001, 0.0001), translation=float3(-0.240646, 0.020569, 0.082068), rotationEulerDeg=float3(0, -45, 0))),
     sceneBuilder.addTriangleMesh(sphereMesh, mySphere)
 )
 

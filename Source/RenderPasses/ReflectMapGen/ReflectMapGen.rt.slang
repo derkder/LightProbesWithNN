@@ -507,8 +507,9 @@ void myHandleHit(ShadingData sd, inout ScatterRayData rayData)
 float3 MyTracePathMap(const uint2 pixel, const uint2 frameDim)
 {
     //return float3(1.0f);
-    //float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
-    float3 mProbeLoc = float3(-0.240646, 0.020569, 0.082068);
+    float3 mProbeLoc = float3(0.16089, 0.28183, 0.08310);
+    //float3 mProbeLoc = float3(-0.240646, 0.020569, 0.082068);
+    //float3 mProbeLoc = float3(-0.085158, 0.4904897, -0.12996);
     float radius = 0.005f; // 0.005(sphere radius) + 0.002(bias)
     float3 outColor = float3(0.f);
     float theta = M_PI * pixel.y / frameDim.y;
@@ -865,55 +866,55 @@ void rayGen()
 
     //----------------
 
-    uint2 pixel = DispatchRaysIndex().xy;
-    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+    // uint2 pixel = DispatchRaysIndex().xy;
+    // uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
 
-    float3 dir;
-    float3 probeExtend;
-    float3 probePos;
-    float3 hitNorm;
-    float3 material;
+    // float3 dir;
+    // float3 probeExtend;
+    // float3 probePos;
+    // float3 hitNorm;
+    // float3 material;
 
-    if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
-    {
-        //uint temp = gFrameCount / frameCap + seed; // 如果没加seed，每次打开程序，种子都和上一次打开是重复的
-        dir = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed1); // reversed indir
-        probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed1);
-        hitNorm = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed2);
-        material = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed3) + 0.5;
-        // tangent = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed3);
-        if(dot(hitNorm, dir) < 0)
-        {
-            hitNorm = -hitNorm;
-        }
-        probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
-        // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
-        gOutputProbePoses[pixel] = float4(probePos, 1.0); 
-        gOutputRayDirs[pixel] = - float4(dir, 1.0);
-        gOutputHitNormals[pixel] = float4(hitNorm, 1.0);
-        gOutputHitMaterials[pixel] = float4(material, 1.0);
-        // gOutputTangents[pixel] = float4(tangent, 1.0);
-    }
-    else
-    {
-        dir = - gOutputRayDirs[pixel].xyz;
-        probePos = gOutputProbePoses[pixel].xyz;
-        hitNorm = gOutputHitNormals[pixel].xyz;
-        material = gOutputHitMaterials[pixel].xyz;
-        // tangent = gOutputTangents[pixel].xyz;
-    }
-    //dir = float3(-0.59131, -0.60645, -0.53174);
-    //probePos = float3(-0.24109, 0.27686, -0.15479);
-    float3 color = MyTracePathRand(pixel, frameDim, dir, probePos, hitNorm, material);
-    gOutputColor[pixel] = float4(color, 1.f);
+    // if(0 == (gFrameCount - offsetCap) % frameCap) //难道初始的framecount就不为0？但我测了是0
+    // {
+    //     //uint temp = gFrameCount / frameCap + seed; // 如果没加seed，每次打开程序，种子都和上一次打开是重复的
+    //     dir = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed1); // reversed indir
+    //     probeExtend = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed1);
+    //     hitNorm = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed2);
+    //     material = generateThreeUniqueRandomNumbers(pixel.x, pixel.y, gSeed3) + 0.5;
+    //     // tangent = generateRandomNormalizedDirection(pixel.x, pixel.y, gSeed3);
+    //     if(dot(hitNorm, dir) < 0)
+    //     {
+    //         hitNorm = -hitNorm;
+    //     }
+    //     probePos = gSceneAABBCenter + probeExtend * gSceneAABBExtent;
+    //     // 本来应该存储probeExtend的，但是因为这里的场景比较小，所以直接存储了probePos
+    //     gOutputProbePoses[pixel] = float4(probePos, 1.0); 
+    //     gOutputRayDirs[pixel] = - float4(dir, 1.0);
+    //     gOutputHitNormals[pixel] = float4(hitNorm, 1.0);
+    //     gOutputHitMaterials[pixel] = float4(material, 1.0);
+    //     // gOutputTangents[pixel] = float4(tangent, 1.0);
+    // }
+    // else
+    // {
+    //     dir = - gOutputRayDirs[pixel].xyz;
+    //     probePos = gOutputProbePoses[pixel].xyz;
+    //     hitNorm = gOutputHitNormals[pixel].xyz;
+    //     material = gOutputHitMaterials[pixel].xyz;
+    //     // tangent = gOutputTangents[pixel].xyz;
+    // }
+    // //dir = float3(-0.59131, -0.60645, -0.53174);
+    // //probePos = float3(-0.24109, 0.27686, -0.15479);
+    // float3 color = MyTracePathRand(pixel, frameDim, dir, probePos, hitNorm, material);
+    // gOutputColor[pixel] = float4(color, 1.f);
 
     //----------------
     
     // //if(!shouldReturnTrue(pixel.x, pixel.y, seed, frameDim)) return;
-    // uint2 pixel = DispatchRaysIndex().xy;
-    // uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
-    // float3 color = MyTracePathMap(pixel, frameDim);
-    // gOutputColor[pixel] = float4(color, 1.f);
+    uint2 pixel = DispatchRaysIndex().xy;
+    uint2 frameDim = DispatchRaysDimensions().xy; // frame的大小,这里改成lightProbes的数量
+    float3 color = MyTracePathMap(pixel, frameDim);
+    gOutputColor[pixel] = float4(color, 1.f);
 
     //----------------
 

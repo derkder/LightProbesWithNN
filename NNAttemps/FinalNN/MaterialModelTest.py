@@ -59,29 +59,35 @@ def convert_png_to_exr(png_path, exr_path):
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(9, 128)
-        self.fc2 = nn.Linear(128, 256)
-        self.fc3 = nn.Linear(256, 128)
-        self.fc4 = nn.Linear(128, 3)
+        self.fc1 = nn.Linear(11, 256)  # 增加神经元数量
+        self.fc2 = nn.Linear(256, 512) # 增加神经元数量
+        self.fc3 = nn.Linear(512, 256) 
+        self.fc4 = nn.Linear(256, 128)
+        self.fc5 = nn.Linear(128, output_dim) # 增加层数
+        self.dropout = nn.Dropout(p=0.5)      # 添加Dropout层
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
+        x = self.dropout(x)
         x = torch.relu(self.fc2(x))
+        x = self.dropout(x)
         x = torch.relu(self.fc3(x))
-        x = self.fc4(x)
+        x = self.dropout(x)
+        x = torch.relu(self.fc4(x))
+        x = self.fc5(x)
         return x
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MLP(input_dim=6, output_dim=3).to(device)
-    model.load_state_dict(torch.load("NNAttemps/FinalNN/models/final_light_probe_model_NORMALPNG.pth"))
+    model.load_state_dict(torch.load("NNAttemps/FinalNN/models/final_light_probe_model_MATERIALPNGBETTER.pth"))
     model.eval()
 
     # 生成光线model_file = "NNAttemps/ShuffledNN2/models/colab/final_light_probe_model_NORMALPNG (5).pth"
     frame_dim = (1920, 1080)
 
     # 加载和预处理EXR文件
-    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/frame_0001"
+    batch_folder_path = "C:/Files/CGProject/NNLightProbes/dumped_data/TestData/raw/cornell_scene"
     exr_paths = {
         "hitposes": os.path.join(batch_folder_path, "Mogwai.NetworkPass.hitposes.3000.exr"),
         "raydirs": os.path.join(batch_folder_path, "Mogwai.NetworkPass.raydirs.3000.exr"),
@@ -97,11 +103,12 @@ def main():
     mask = np.any(images["raydirs"] != 0, axis=-1)
     mask = mask.reshape((frame_dim[1], frame_dim[0]))  # 重新调整mask的形状，使其与target_img形状一致
 
-    # Prepare input data
+    # Prepare input data with additional dimensions
+    additional_dims = np.tile(np.array([[0.0, 1.0]]), (images["hitposes"].shape[0], 1))
     input_data = np.concatenate(
-        [images["hitposes"], images["raydirs"], images["normals"]], 
+        [images["hitposes"], images["raydirs"], images["normals"], additional_dims], 
         axis=1
-    ).reshape(-1, 9)
+    ).reshape(-1, 11)  # 更新最终的维度，变为11维
     input_tensor = torch.tensor(input_data, dtype=torch.float32).to(device)
 
     # 处理模型输出
@@ -128,12 +135,12 @@ def main():
     target_img[mask] = output_img[mask]
 
     # 保存最终结果为EXR格式 
-    save_exr("NNAttemps/FinalNN/output/output00_90_masked.exr", target_img)
+    save_exr("NNAttemps/FinalNN/output/output00_98_masked.exr", target_img)
 
     # 生成仅包含mask部分的图像并保存为EXR格式
     mask_only_img = np.zeros_like(target_img)
     mask_only_img[mask] = output_img[mask]
-    save_exr("NNAttemps/FinalNN/output/output00_90_mask_only.exr", mask_only_img)
+    save_exr("NNAttemps/FinalNN/output/output00_98_mask_only.exr", mask_only_img)
 
 if __name__ == '__main__':
     main()

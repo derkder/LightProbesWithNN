@@ -19,12 +19,12 @@ def render_graph_CollectData():
     g.addEdge("CollectData.color", "AccumulatePass.input")
     g.addEdge("AccumulatePass.output", "ToneMapper.src")
 
-    g.markOutput("AccumulatePass.output")
-    g.markOutput("CollectData.diffuse")
-    g.markOutput("CollectData.specular")
-    g.markOutput("CollectData.roughnessemmisive")
-    g.markOutput("CollectData.probePoses")
-    g.markOutput("CollectData.rayDirs")
+    # g.markOutput("AccumulatePass.output")
+    # g.markOutput("CollectData.diffuse")
+    # g.markOutput("CollectData.specular")
+    # g.markOutput("CollectData.roughnessemmisive")
+    # g.markOutput("CollectData.probePoses")
+    # g.markOutput("CollectData.rayDirs")
     g.markOutput("ToneMapper.dst")
     return g
 
@@ -130,12 +130,12 @@ except NameError: pass
 
 
 m.loadScene(scene_path)
-for i in range(7000):
-    renderFrame()
-    if(4000 == i):
-        file_name_format = "frame_{:04d}".format(n_sample_count)
-        outputDir = f"{output_path}/{file_name_format}"
-        os.makedirs(outputDir, exist_ok=True)
-        m.frameCapture.outputDir = outputDir
-        m.frameCapture.capture()
-        n_sample_count += 1
+# for i in range(7000):
+#     renderFrame()
+#     if(4000 == i):
+#         file_name_format = "frame_{:04d}".format(n_sample_count)
+#         outputDir = f"{output_path}/{file_name_format}"
+#         os.makedirs(outputDir, exist_ok=True)
+#         m.frameCapture.outputDir = outputDir
+#         m.frameCapture.capture()
+#         n_sample_count += 1
