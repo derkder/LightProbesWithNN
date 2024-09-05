@@ -129,6 +129,20 @@ struct StandardMaterial : MaterialBase, IMaterial
         d.hasEntryPointVolumeProperties = data.getHasEntryPointVolumeProperties();
         d.hasSigmaSGreaterZero = (any(data.volumeScattering) > 0.f);
 
+        if(true == sd.isCustomMat)
+        {
+            // d.metallic = 1.0;
+            // d.roughness = 0.0;
+            // // //d.diffuseTransmission = sd.diffuseTransmission;
+            // // d.diffuseTransmission = 0.0;
+            // // d.specularTransmission = 0.0;
+            // // d.transmission = float3(1., 1., 1.);
+            // d.eta = 0.5;
+            //d.volumeScattering = float3(1., 1., 1.);
+            //d.alphamode = mask;
+
+        }
+        //d.transmission = float3(1);
         return StandardMaterialInstance(sf, d, emission);
     }
 

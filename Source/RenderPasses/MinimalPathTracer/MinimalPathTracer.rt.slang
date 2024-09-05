@@ -107,6 +107,7 @@ struct ScatterRayData
     float3 thp;       ///< Current path throughput. This is updated at each path vertex.
     uint pathLength;  ///< Path length in number of path segments (0 at origin, 1 at first secondary hit, etc.). Max 2^31.
     float3 origin;    ///< Next path segment origin.
+    bool isCustomMat;
     float3 direction; ///< Next path segment direction.
 
     SampleGenerator sg; ///< Per-ray state for the sample generator (up to 16B).
@@ -121,6 +122,7 @@ struct ScatterRayData
         this.radiance = float3(0, 0, 0);
         this.thp = float3(1, 1, 1);
         this.origin = float3(0, 0, 0);
+        this.isCustomMat = false;
         this.direction = float3(0, 0, 0);
         this.sg = sg;
     }
@@ -327,8 +329,9 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
 
     // Load shading data.
     ShadingData sd = loadShadingData(hit, rayData.origin, rayData.direction);
-
-    // Create material instance.
+    if (true == rayData.isCustomMat)
+        sd.isCustomMat = true;
+    // //Create material instance.
     let lod = ExplicitLodTextureSampler(0.f);
     let mi = gScene.materials.getMaterialInstance(sd, lod);
 
@@ -375,6 +378,31 @@ void handleHit(const HitInfo hit, inout ScatterRayData rayData)
     rayData.pathLength++;
 }
 
+float3 MyTracePath(const uint2 pixel, const uint2 frameDim)
+{
+    uint32_t idx = pixel.x + pixel.y * frameDim.x;
+    float3 outColor = float3(0.f);
+
+    const float3 primaryRayOrigin = gScene.camera.getPosition();
+    const float3 primaryRayDir = getPrimaryRayDir(pixel, frameDim, gScene.camera);
+
+    // 直接发射光线，移除使用 gbuffer的逻辑
+    SampleGenerator sg = SampleGenerator(pixel, gFrameCount); // 随机数生成器
+    ScatterRayData rayData = ScatterRayData(sg);
+    rayData.origin = primaryRayOrigin;
+    rayData.direction = primaryRayDir;
+
+    //
+    for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
+    {
+        traceScatterRay(rayData);
+    }
+
+    // Store contribution from scatter ray.
+    outColor += rayData.radiance;
+    return outColor;
+}
+
 /**
  * This is the main entry point for the minimal path tracer.
  *
@@ -405,7 +433,9 @@ float3 tracePath(const uint2 pixel, const uint2 frameDim)
 
         // Load shading data.
         ShadingData sd = loadShadingData(hit, primaryRayOrigin, primaryRayDir);
-
+        sd.metallic = 1.0;
+        sd.roughness = 0.0;
+        sd.diffuseTransmission = 0.0;
         // Create material instance at shading point.
         let lod = ExplicitLodTextureSampler(0.f);
         let mi = gScene.materials.getMaterialInstance(sd, lod);
@@ -514,6 +544,9 @@ void scatterTriangleMeshClosestHit(inout ScatterRayData rayData, BuiltInTriangle
     triangleHit.instanceID = getGeometryInstanceID();
     triangleHit.primitiveIndex = PrimitiveIndex();
     triangleHit.barycentrics = attribs.barycentrics;
+    const uint materialID = gScene.getMaterialID(triangleHit.instanceID);
+    if (0 == materialID && 0 == rayData.pathLength)
+        rayData.isCustomMat = true;
     handleHit(HitInfo(triangleHit), rayData);
 }
 
@@ -616,7 +649,8 @@ void rayGen()
     uint2 pixel = DispatchRaysIndex().xy;
     uint2 frameDim = DispatchRaysDimensions().xy;
 
-    float3 color = tracePath(pixel, frameDim);
+    float3 color = MyTracePath(pixel, frameDim);
+    //float3 color = tracePath(pixel, frameDim);
 
     gOutputColor[pixel] = float4(color, 1.f);
 }

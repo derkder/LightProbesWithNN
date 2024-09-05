@@ -65,6 +65,8 @@ interface IMaterial
     */
     MaterialInstance setupMaterialInstance(const MaterialSystem ms, const ShadingData sd, const ITextureSampler lod, const uint hints = (uint)MaterialInstanceHints::None);
 
+    //MaterialInstance MySetupMaterialInstance(const MaterialSystem ms, const ShadingData sd, const ITextureSampler lod, const uint hints = (uint)MaterialInstanceHints::None, const float met = 0., const float rough = 0., const float diffuseTransmission = 0.);
+
     /** A differentiable version of `setupMaterialInstance`.
         This operation returns an additional `DiffMaterialData` structure that contains differentiable parameters.
     */
