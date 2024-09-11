@@ -15,6 +15,7 @@ The concept of the reflection map field is that it is able to generate the refle
 The implementation follows a two-phase approach: In the offline phase, extension data collection is performed by simulating huge amounts of ray-object interactions with random hit information(including the material of the hit surface) within the scene. The inputs and outputs from these simulations are then used to train the deep learning model, effectively learning the reflection map field for the specific scene. During real-time rendering, the trained network is employed to predict the rendered appearance of highly reflective objects, while the traditional path tracing algorithm continues to be used for other surfaces. Extensive experiments under various conditions have validated the effectiveness of the proposed approach, demonstrating significant improvements in rendering quality.
 
 ---
+## Results
 | **(Metallic, Roughness)** | **GT** | **Render Result** | **Render Result (After Sharpen)** |
 |---------------------------|--------|-------------------|-----------------------------------|
 | **(1.0, 0.0)**             | ![GT](imgs/601.png) | ![Render Result](imgs/602.png) | ![Render Result (After Sharpen)](imgs/603.png) |
@@ -23,3 +24,4 @@ The implementation follows a two-phase approach: In the offline phase, extension
 | **(0.4, 0.6)**             | ![GT](imgs/616.png) | ![Render Result](imgs/617.png) | ![Render Result (After Sharpen)](imgs/618.png) |
 | **(1.0, 0.0)**             | ![GT](imgs/619.png) | ![Render Result](imgs/620.png) | ![Render Result (After Sharpen)](imgs/621.png) |
 | **(0.4, 0.6)**             | ![GT](imgs/622.png) | ![Render Result](imgs/623.png) | ![Render Result (After Sharpen)](imgs/624.png) |
+
