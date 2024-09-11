@@ -14,10 +14,12 @@ The concept of the reflection map field is that it is able to generate the refle
        
 The implementation follows a two-phase approach: In the offline phase, extension data collection is performed by simulating huge amounts of ray-object interactions with random hit information(including the material of the hit surface) within the scene. The inputs and outputs from these simulations are then used to train the deep learning model, effectively learning the reflection map field for the specific scene. During real-time rendering, the trained network is employed to predict the rendered appearance of highly reflective objects, while the traditional path tracing algorithm continues to be used for other surfaces. Extensive experiments under various conditions have validated the effectiveness of the proposed approach, demonstrating significant improvements in rendering quality.
 
-<div style="display: flex;">
-  <img src="imgs/4_005.png" alt="STEP1" style="width: 40%;">
-  <img src="imgs/4_07.png" alt="STEP2" style="width: 50%;">
-</div>
+<table>
+  <tr>
+    <td><img src="imgs/4_005.png" alt="STEP1" width="200"/></td>
+    <td><img src="imgs/4_07.png" alt="STEP2" width="200"/></td>
+  </tr>
+</table>
 
 
 
