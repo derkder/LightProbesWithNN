@@ -17,7 +17,7 @@ The implementation follows a two-phase approach: In the offline phase, extension
 <table>
   <tr>
     <td><img src="imgs/4_005.png" alt="STEP1" width="400"/></td>
-    <td><img src="imgs/4_07.png" alt="STEP2" width="400"/></td>
+    <td><img src="imgs/4_07.png" alt="STEP2" width="500"/></td>
   </tr>
 </table>
 
