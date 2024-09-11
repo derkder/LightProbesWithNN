@@ -25,3 +25,7 @@ The implementation follows a two-phase approach: In the offline phase, extension
 | **(1.0, 0.0)**             | ![GT](imgs/619.png) | ![Render Result](imgs/620.png) | ![Render Result (After Sharpen)](imgs/621.png) |
 | **(0.4, 0.6)**             | ![GT](imgs/622.png) | ![Render Result](imgs/623.png) | ![Render Result (After Sharpen)](imgs/624.png) |
 
+
+---
+## Report
+[Full Report](https://drive.google.com/file/d/1WTEwZddpIXH2OIJBBnEyLT9i7miH33rV/view?usp=drive_link).
